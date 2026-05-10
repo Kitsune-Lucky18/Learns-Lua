@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuaLearn — Belajar Lua dari Nol</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c14;
+    --surface: #111420;
+    --surface2: #181c2e;
+    --border: #252a40;
+    --accent: #7c6af7;
+    --accent2: #f7796a;
+    --accent3: #4ef0a2;
+    --text: #e8eaf6;
+    --muted: #6b7199;
+    --code-bg: #0d1117;
+    --code-border: #30363d;
+    --highlight: #7c6af720;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: .6;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo h1 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+
+  .logo p {
+    font-size: .7rem;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .lang-toggle {
+    margin: 12px 16px;
+    display: flex;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .lang-btn {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Sora', sans-serif;
+    font-size: .75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all .2s;
+  }
+
+  .lang-btn.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .nav-section {
+    padding: 8px 12px 4px;
+    font-size: .65rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 1px 8px;
+    font-size: .82rem;
+    color: var(--muted);
+    transition: all .15s;
+    border: 1px solid transparent;
+  }
+
+  .nav-item:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  .nav-item.active {
+    background: var(--highlight);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .nav-item .icon { font-size: 1rem; }
+  .nav-item .badge {
+    margin-left: auto;
+    font-size: .6rem;
+    background: var(--accent2);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    font-size: .7rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .sidebar-footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .sidebar-footer a:hover { color: var(--accent2); }
+
+  /* MAIN */
+  .main {
+    margin-left: 260px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 50;
+    backdrop-filter: blur(12px);
+  }
+
+  .topbar h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .topbar .breadcrumb {
+    font-size: .75rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topbar .breadcrumb span { color: var(--accent); }
+
+  .progress-bar-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .progress-bar-wrap span {
+    font-size: .75rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .prog-bar {
+    width: 120px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 10px;
+    transition: width .5s ease;
+  }
+
+  /* CONTENT */
+  .content {
+    padding: 40px 48px;
+    max-width: 900px;
+    flex: 1;
+  }
+
+  .lesson {
+    display: none;
+    animation: fadeIn .3s ease;
+  }
+
+  .lesson.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .lesson-header {
+    margin-bottom: 32px;
+  }
+
+  .lesson-tag {
+    display: inline-block;
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    background: var(--highlight);
+    border: 1px solid var(--accent);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .lesson-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+  }
+
+  .lesson-title em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lesson-desc {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: .9rem;
+    line-height: 1.7;
+    max-width: 620px;
+  }
+
+  /* CONCEPT CARD */
+  .concept-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .concept-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent), var(--accent2));
+  }
+
+  .concept-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .concept-card p {
+    font-size: .85rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--code-border);
+    background: #0a0f1a;
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+
+  .code-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .code-label {
+    font-size: .65rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: .65rem;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all .2s;
+  }
+
+  .copy-btn:hover { color: var(--accent3); border-color: var(--accent3); }
+  .copy-btn.copied { color: var(--accent3); border-color: var(--accent3); }
+
+  .code-body {
+    padding: 20px;
+    font-size: .82rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* Syntax highlighting */
+  .kw { color: #f97583; }
+  .fn { color: #79b8ff; }
+  .str { color: #9ecbff; }
+  .num { color: #f8e3a1; }
+  .cmt { color: #6a737d; font-style: italic; }
+  .var { color: #e6edf3; }
+  .op { color: #f97583; }
+  .tbl { color: #4ef0a2; }
+  .acc { color: var(--accent2); }
+
+  /* OUTPUT BOX */
+  .output-box {
+    background: #0a1a0e;
+    border: 1px solid #1a4d2e;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem;
+    color: #4ef0a2;
+    margin-top: 8px;
+  }
+
+  .output-label {
+    font-size: .6rem;
+    color: #4ef0a2;
+    opacity: .6;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* INFO BOX */
+  .info-box {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: .83rem;
+    line-height: 1.65;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .info-box.tip {
+    background: #0d1f33;
+    border: 1px solid #1e4080;
+    color: #7eb8f7;
+  }
+
+  .info-box.warn {
+    background: #1f1600;
+    border: 1px solid #7d5200;
+    color: #f7c56a;
+  }
+
+  .info-box.cool {
+    background: #001f14;
+    border: 1px solid #00573a;
+    color: #4ef0a2;
+  }
+
+  .info-box .ib-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .83rem;
+    margin: 16px 0;
+  }
+
+  .data-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .data-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .data-table td:first-child { color: var(--accent2); }
+
+  .data-table tr:hover td { background: var(--highlight); color: var(--text); }
+
+  /* NAV BUTTONS */
+  .nav-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: .83rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    margin-left: auto;
+  }
+
+  .btn.primary:hover { background: #6657d8; border-color: #6657d8; }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 80px 48px 60px;
+    max-width: 900px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--accent3);
+    background: #00251a;
+    border: 1px solid #006644;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 .g1 {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero h1 .g2 {
+    background: linear-gradient(135deg, var(--accent3), #7c6af7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto 32px;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    margin-bottom: 40px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat .num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+  }
+
+  .stat .lbl {
+    font-size: .7rem;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .hero-start {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: .9rem;
+    cursor: pointer;
+    border: none;
+    font-family: 'Sora', sans-serif;
+    transition: all .2s;
+    box-shadow: 0 8px 32px rgba(124, 106, 247, .35);
+  }
+
+  .hero-start:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124, 106, 247, .45); }
+
+  /* TOPIC GRID */
+  .topic-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .topic-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(124, 106, 247, .15);
+  }
+
+  .topic-card .t-icon { font-size: 1.6rem; margin-bottom: 10px; }
+  .topic-card h4 { font-size: .9rem; font-weight: 700; margin-bottom: 4px; }
+  .topic-card p { font-size: .75rem; color: var(--muted); line-height: 1.5; }
+  .topic-card .t-count {
+    margin-top: 10px;
+    font-size: .65rem;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+  }
+
+  /* MOBILE */
+  .hamburger {
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 200;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 40px; height: 40px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform .3s ease;
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .main { margin-left: 0; }
+
+    .hamburger { display: flex; }
+
+    .content { padding: 24px 20px; }
+
+    .hero { padding: 60px 20px 40px; }
+    .hero h1 { font-size: 2.3rem; }
+    .topic-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 20px; }
+
+    .topbar { padding: 14px 20px 14px 56px; }
+  }
+
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 90;
+  }
+
+  .overlay.show { display: block; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem;
+    color: var(--accent2);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="hamburger" id="hamburger">☰</div>
+<div class="overlay" id="overlay"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="logo">
+    <h1>🌙 LuaLearn</h1>
+    <p>// belajar lua dari nol</p>
+  </div>
+
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('id')" id="btn-id">🇮🇩 Indonesia</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">🇬🇧 English</button>
+  </div>
+
+  <div class="nav-section" id="nav-section-1">🚀 Mulai</div>
+  <div class="nav-item active" onclick="showLesson('home')"><span class="icon">🏠</span><span id="nav-home">Beranda</span></div>
+
+  <div class="nav-section" id="nav-section-2">📘 Dasar</div>
+  <div class="nav-item" onclick="showLesson('intro')"><span class="icon">🔤</span><span id="nav-intro">Pengenalan Lua</span></div>
+  <div class="nav-item" onclick="showLesson('print')"><span class="icon">📢</span><span id="nav-print">Print & Output</span></div>
+  <div class="nav-item" onclick="showLesson('vars')"><span class="icon">📦</span><span id="nav-vars">Variabel & Tipe Data</span></div>
+  <div class="nav-item" onclick="showLesson('ops')"><span class="icon">➕</span><span id="nav-ops">Operator</span></div>
+  <div class="nav-item" onclick="showLesson('strings')"><span class="icon">📝</span><span id="nav-strings">String</span></div>
+
+  <div class="nav-section" id="nav-section-3">🔁 Kontrol</div>
+  <div class="nav-item" onclick="showLesson('conditions')"><span class="icon">❓</span><span id="nav-conditions">If / Else</span></div>
+  <div class="nav-item" onclick="showLesson('loops')"><span class="icon">🔄</span><span id="nav-loops">Loop / Perulangan</span></div>
+
+  <div class="nav-section" id="nav-section-4">🛠️ Lanjutan</div>
+  <div class="nav-item" onclick="showLesson('functions')"><span class="icon">⚙️</span><span id="nav-functions">Fungsi / Functions</span></div>
+  <div class="nav-item" onclick="showLesson('tables')"><span class="icon">📊</span><span id="nav-tables">Tables (Array & Dict)</span></div>
+  <div class="nav-item" onclick="showLesson('oop')"><span class="icon">🏗️</span><span id="nav-oop">OOP & Class</span></div>
+
+  <div class="nav-section" id="nav-section-5">🎮 Roblox & GUI</div>
+  <div class="nav-item" onclick="showLesson('roblox')"><span class="icon">🎮</span><span id="nav-roblox">Intro Roblox Lua</span><span class="badge">HOT</span></div>
+  <div class="nav-item" onclick="showLesson('gui')"><span class="icon">🖼️</span><span id="nav-gui">Frame & GUI</span></div>
+  <div class="nav-item" onclick="showLesson('events')"><span class="icon">⚡</span><span id="nav-events">Events & Klik</span></div>
+
+  <div class="nav-section" id="nav-section-6">🤖 Scripts Populer</div>
+  <div class="nav-item" onclick="showLesson('autofarm')"><span class="icon">🌾</span><span id="nav-autofarm">Auto Farm</span></div>
+  <div class="nav-item" onclick="showLesson('esp')"><span class="icon">👁️</span><span id="nav-esp">ESP / Wallhack</span></div>
+  <div class="nav-item" onclick="showLesson('speed')"><span class="icon">💨</span><span id="nav-speed">Speed & Jump Hack</span></div>
+  <div class="nav-item" onclick="showLesson('brainrot')"><span class="icon">🧠</span><span id="nav-brainrot">Auto Find Brainrots</span><span class="badge">NEW</span></div>
+  <div class="nav-item" onclick="showLesson('remote')"><span class="icon">📡</span><span id="nav-remote">Remote Events</span></div>
+
+  <div class="sidebar-footer">
+    <p>Made by <a href="https://youtube.com/@KitsuneeIsMe" target="_blank">@KitsuneeIsMe</a> 🦊</p>
+    <p style="margin-top:4px">© 2025 LuaLearn</p>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb">
+      <span id="topbar-section">Beranda</span> › <span id="topbar-page">Home</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <span id="progress-text">0/14</span>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div id="lessons-container">
+
+    <!-- HOME -->
+    <div class="lesson active" id="lesson-home">
+      <div class="hero">
+        <div class="hero-badge">🌙 lua programming · v5.4</div>
+        <h1>
+          <span class="g1" id="hero-title1">Belajar Lua</span><br>
+          <span class="g2" id="hero-title2">dari Nol sampai Jago</span>
+        </h1>
+        <p id="hero-desc">Website belajar Lua lengkap — dari syntax dasar, tipe data, fungsi, table, sampai bikin GUI di Roblox dan script-script keren. Cocok untuk pemula!</p>
+
+        <div class="hero-stats">
+          <div class="stat"><div class="num">14</div><div class="lbl" id="stat1">Topik</div></div>
+          <div class="stat"><div class="num">50+</div><div class="lbl" id="stat2">Contoh Kode</div></div>
+          <div class="stat"><div class="num">100%</div><div class="lbl" id="stat3">Gratis</div></div>
+        </div>
+
+        <button class="hero-start" onclick="showLesson('intro')">
+          🚀 <span id="hero-btn">Mulai Belajar</span>
+        </button>
+
+        <div class="topic-grid" style="text-align:left; margin-top:48px">
+          <div class="topic-card" onclick="showLesson('print')">
+            <div class="t-icon">📢</div>
+            <h4 id="tc1-title">Syntax Dasar</h4>
+            <p id="tc1-desc">Print, komentar, variabel, dan semua dasar Lua yang wajib kamu tau</p>
+            <div class="t-count">→ 5 Pelajaran</div>
+          </div>
+          <div class="topic-card" onclick="showLesson('conditions')">
+            <div class="t-icon">🔁</div>
+            <h4 id="tc2-title">Logika & Loop</h4>
+            <p id="tc2-desc">If/else, for, while — cara bikin program yang bisa berpikir dan mengulang</p>
+            <div class="t-count">→ 2 Pelajaran</div>
+          </div>
+          <div class="topic-card" onclick="showLesson('roblox')">
+            <div class="t-icon">🎮</div>
+            <h4 id="tc3-title">Roblox & GUI</h4>
+            <p id="tc3-desc">Cara bikin script di Roblox, frame, button, dan semua hal tentang GUI</p>
+            <div class="t-count">→ 3 Pelajaran</div>
+          </div>
+          <div class="topic-card" onclick="showLesson('autofarm')">
+            <div class="t-icon">🤖</div>
+            <h4 id="tc4-title">Script Populer</h4>
+            <p id="tc4-desc">Auto farm, ESP, speed hack, auto find brainrots dan script keren lainnya</p>
+            <div class="t-count">→ 5 Pelajaran</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTRO -->
+    <div class="lesson" id="lesson-intro">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 1</div>
+          <h2 class="lesson-title"><em id="intro-title">Apa itu Lua?</em></h2>
+          <p class="lesson-desc" id="intro-desc">Lua adalah bahasa pemrograman yang ringan, cepat, dan mudah dipelajari. Dibuat di Brazil tahun 1993, Lua sering dipakai di game (terutama Roblox), aplikasi, dan script otomatis.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>🌙 <span id="intro-c1-title">Kenapa Belajar Lua?</span></h3>
+          <p id="intro-c1-desc">Lua dipakai di Roblox Studio, game engine seperti Love2D, dan banyak aplikasi besar. Syntaxnya simpel dan mudah dimengerti bahkan untuk pemula.</p>
+          <div class="info-box cool">
+            <span class="ib-icon">✅</span>
+            <span id="intro-tip1">Lua adalah bahasa #1 yang dipakai di Roblox. Kalau kamu mau bikin game Roblox, kamu HARUS belajar Lua!</span>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>📋 <span id="intro-c2-title">Fakta Singkat Lua</span></h3>
+          <table class="data-table">
+            <tr><th id="th-prop">Properti</th><th id="th-val">Nilai</th></tr>
+            <tr><td id="intro-t1k">Dibuat</td><td id="intro-t1v">1993, di PUC-Rio Brazil</td></tr>
+            <tr><td id="intro-t2k">Versi Terbaru</td><td>Lua 5.4</td></tr>
+            <tr><td id="intro-t3k">Dipakai Di</td><td>Roblox, Redis, Nginx, LÖVE2D, Defold</td></tr>
+            <tr><td id="intro-t4k">Tipe</td><td id="intro-t4v">Interpreted, Dynamically Typed</td></tr>
+            <tr><td id="intro-t5k">Kelebihan</td><td id="intro-t5v">Ringan, cepat, mudah embed ke C</td></tr>
+          </table>
+        </div>
+
+        <div class="concept-card">
+          <h3>📝 <span id="intro-c3-title">Komentar di Lua</span></h3>
+          <p id="intro-c3-desc">Komentar adalah teks yang diabaikan oleh Lua. Dipakai untuk menjelaskan kode.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Ini komentar satu baris</span>
+
+<span class="cmt">--[[
+    Ini komentar
+    multi-baris
+    bisa banyak baris
+]]</span>
+
+<span class="fn">print</span>(<span class="str">"Kode ini berjalan!"</span>) <span class="cmt">-- komentar di akhir baris</span></div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('home')">← <span id="nav-back-home">Beranda</span></button>
+          <button class="btn primary" onclick="showLesson('print')"><span id="nav-next-print">Print & Output</span> →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINT -->
+    <div class="lesson" id="lesson-print">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 2</div>
+          <h2 class="lesson-title"><em id="print-title">Print & Output</em></h2>
+          <p class="lesson-desc" id="print-desc">Fungsi pertama yang harus kamu pelajari adalah <code>print()</code> — untuk menampilkan teks ke layar/konsol.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>📢 <span id="print-c1">Fungsi print()</span></h3>
+          <p id="print-c1-desc">print() adalah fungsi bawaan Lua untuk menampilkan output. Bisa menampilkan teks, angka, dan variabel.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="fn">print</span>(<span class="str">"Hello Dev!"</span>)
+<span class="fn">print</span>(<span class="str">"Lua itu seru!"</span>)
+<span class="fn">print</span>(<span class="num">42</span>)
+<span class="fn">print</span>(<span class="num">3.14</span>)
+<span class="fn">print</span>(<span class="kw">true</span>)</div>
+          </div>
+          <div class="output-box">
+            <div class="output-label">OUTPUT</div>
+Hello Dev!
+Lua itu seru!
+42
+3.14
+true</div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🔗 <span id="print-c2">Menggabung Teks (Concatenation)</span></h3>
+          <p id="print-c2-desc">Di Lua, pakai <code>..</code> untuk menggabungkan string.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">nama</span> = <span class="str">"Kitsune"</span>
+<span class="fn">print</span>(<span class="str">"Halo, "</span> <span class="op">..</span> <span class="var">nama</span> <span class="op">..</span> <span class="str">"!"</span>)
+
+<span class="cmt">-- Multiple argumen dipisah koma (ada spasi otomatis)</span>
+<span class="fn">print</span>(<span class="str">"Nama:"</span>, <span class="var">nama</span>, <span class="str">"| Channel: @KitsuneeIsMe"</span>)</div>
+          </div>
+          <div class="output-box">
+            <div class="output-label">OUTPUT</div>
+Halo, Kitsune!
+Nama:  Kitsune  | Channel: @KitsuneeIsMe</div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🖨️ <span id="print-c3">io.write() vs print()</span></h3>
+          <p id="print-c3-desc"><code>io.write()</code> mencetak tanpa newline di akhir, berguna untuk output satu baris.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body">io.<span class="fn">write</span>(<span class="str">"Hello "</span>)
+io.<span class="fn">write</span>(<span class="str">"Dev!\n"</span>)  <span class="cmt">-- \n = newline manual</span>
+<span class="fn">print</span>(<span class="str">"Ini pakai print (ada enter otomatis)"</span>)</div>
+          </div>
+          <div class="output-box">
+            <div class="output-label">OUTPUT</div>
+Hello Dev!
+Ini pakai print (ada enter otomatis)</div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('intro')">← <span id="nav-back-intro">Pengenalan</span></button>
+          <button class="btn primary" onclick="showLesson('vars')"><span id="nav-next-vars">Variabel</span> →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIABLES -->
+    <div class="lesson" id="lesson-vars">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 3</div>
+          <h2 class="lesson-title"><em id="vars-title">Variabel & Tipe Data</em></h2>
+          <p class="lesson-desc" id="vars-desc">Variabel adalah tempat menyimpan data. Di Lua ada beberapa tipe data dasar yang wajib kamu kenal.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>📦 <span id="vars-c1">Membuat Variabel</span></h3>
+          <p id="vars-c1-desc">Pakai kata kunci <code>local</code> untuk variabel lokal (disarankan). Tanpa <code>local</code> = variabel global.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Variabel lokal (DISARANKAN)</span>
+<span class="kw">local</span> <span class="var">nama</span> = <span class="str">"Kitsune"</span>
+<span class="kw">local</span> <span class="var">umur</span> = <span class="num">17</span>
+<span class="kw">local</span> <span class="var">tinggi</span> = <span class="num">170.5</span>
+<span class="kw">local</span> <span class="var">aktif</span> = <span class="kw">true</span>
+<span class="kw">local</span> <span class="var">kosong</span> = <span class="kw">nil</span>  <span class="cmt">-- nil = tidak ada nilai</span>
+
+<span class="cmt">-- Variabel global (hindari kalau bisa)</span>
+<span class="var">namaGlobal</span> = <span class="str">"Ini global"</span>
+
+<span class="fn">print</span>(<span class="var">nama</span>, <span class="var">umur</span>, <span class="var">aktif</span>)</div>
+          </div>
+          <div class="output-box"><div class="output-label">OUTPUT</div>Kitsune  17  true</div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🎨 <span id="vars-c2">Tipe Data di Lua</span></h3>
+          <table class="data-table">
+            <tr><th id="th-type">Tipe</th><th id="th-contoh">Contoh</th><th id="th-keterangan">Keterangan</th></tr>
+            <tr><td>string</td><td>"Hello"</td><td id="td-string">Teks / kata-kata</td></tr>
+            <tr><td>number</td><td>42, 3.14</td><td id="td-number">Angka (integer & float)</td></tr>
+            <tr><td>boolean</td><td>true, false</td><td id="td-boolean">Benar / salah</td></tr>
+            <tr><td>nil</td><td>nil</td><td id="td-nil">Tidak ada nilai / kosong</td></tr>
+            <tr><td>table</td><td>{}</td><td id="td-table">Array / objek / kamus</td></tr>
+            <tr><td>function</td><td>function() end</td><td id="td-function">Fungsi yang tersimpan</td></tr>
+          </table>
+        </div>
+
+        <div class="concept-card">
+          <h3>🔍 <span id="vars-c3">Cek Tipe Data dengan type()</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="fn">print</span>(<span class="fn">type</span>(<span class="str">"Hello"</span>))   <span class="cmt">-- string</span>
+<span class="fn">print</span>(<span class="fn">type</span>(<span class="num">42</span>))       <span class="cmt">-- number</span>
+<span class="fn">print</span>(<span class="fn">type</span>(<span class="kw">true</span>))     <span class="cmt">-- boolean</span>
+<span class="fn">print</span>(<span class="fn">type</span>(<span class="kw">nil</span>))      <span class="cmt">-- nil</span>
+<span class="fn">print</span>(<span class="fn">type</span>({}))       <span class="cmt">-- table</span>
+<span class="fn">print</span>(<span class="fn">type</span>(<span class="fn">print</span>))    <span class="cmt">-- function</span></div>
+          </div>
+          <div class="output-box"><div class="output-label">OUTPUT</div>string
+number
+boolean
+nil
+table
+function</div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('print')">← Print</button>
+          <button class="btn primary" onclick="showLesson('ops')">Operator →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERATORS -->
+    <div class="lesson" id="lesson-ops">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 4</div>
+          <h2 class="lesson-title"><em id="ops-title">Operator</em></h2>
+          <p class="lesson-desc" id="ops-desc">Operator dipakai untuk melakukan operasi matematika, perbandingan, dan logika di Lua.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>➕ <span id="ops-c1">Operator Matematika</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">a</span> = <span class="num">10</span>
+<span class="kw">local</span> <span class="var">b</span> = <span class="num">3</span>
+
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">+</span> <span class="var">b</span>)   <span class="cmt">-- 13  (tambah)</span>
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">-</span> <span class="var">b</span>)   <span class="cmt">-- 7   (kurang)</span>
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">*</span> <span class="var">b</span>)   <span class="cmt">-- 30  (kali)</span>
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">/</span> <span class="var">b</span>)   <span class="cmt">-- 3.3333... (bagi)</span>
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">%</span> <span class="var">b</span>)   <span class="cmt">-- 1   (sisa bagi / modulo)</span>
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">^</span> <span class="var">b</span>)   <span class="cmt">-- 1000 (pangkat)</span>
+<span class="fn">print</span>(<span class="var">a</span> <span class="op">//</span> <span class="var">b</span>)  <span class="cmt">-- 3   (bagi bulat / floor div, Lua 5.3+)</span></div>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>⚖️ <span id="ops-c2">Operator Perbandingan</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="fn">print</span>(<span class="num">5</span> <span class="op">==</span> <span class="num">5</span>)   <span class="cmt">-- true  (sama dengan)</span>
+<span class="fn">print</span>(<span class="num">5</span> <span class="op">~=</span> <span class="num">3</span>)   <span class="cmt">-- true  (tidak sama) -- bukan !=</span>
+<span class="fn">print</span>(<span class="num">5</span> <span class="op">></span> <span class="num">3</span>)    <span class="cmt">-- true  (lebih besar)</span>
+<span class="fn">print</span>(<span class="num">5</span> <span class="op"><</span> <span class="num">3</span>)    <span class="cmt">-- false (lebih kecil)</span>
+<span class="fn">print</span>(<span class="num">5</span> <span class="op">>=</span> <span class="num">5</span>)   <span class="cmt">-- true  (lebih besar atau sama)</span>
+<span class="fn">print</span>(<span class="num">5</span> <span class="op"><=</span> <span class="num">4</span>)   <span class="cmt">-- false (lebih kecil atau sama)</span></div>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🧠 <span id="ops-c3">Operator Logika</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="fn">print</span>(<span class="kw">true</span> <span class="kw">and</span> <span class="kw">true</span>)   <span class="cmt">-- true  (keduanya harus true)</span>
+<span class="fn">print</span>(<span class="kw">true</span> <span class="kw">and</span> <span class="kw">false</span>)  <span class="cmt">-- false</span>
+<span class="fn">print</span>(<span class="kw">true</span> <span class="kw">or</span> <span class="kw">false</span>)   <span class="cmt">-- true  (salah satu true = true)</span>
+<span class="fn">print</span>(<span class="kw">false</span> <span class="kw">or</span> <span class="kw">false</span>)  <span class="cmt">-- false</span>
+<span class="fn">print</span>(<span class="kw">not</span> <span class="kw">true</span>)         <span class="cmt">-- false (kebalikan)</span>
+<span class="fn">print</span>(<span class="kw">not</span> <span class="kw">false</span>)        <span class="cmt">-- true</span></div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('vars')">← Variabel</button>
+          <button class="btn primary" onclick="showLesson('strings')">String →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRINGS -->
+    <div class="lesson" id="lesson-strings">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 5</div>
+          <h2 class="lesson-title"><em id="strings-title">String (Teks)</em></h2>
+          <p class="lesson-desc" id="strings-desc">String adalah tipe data untuk menyimpan teks. Lua punya banyak fungsi bawaan untuk memanipulasi string.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>🔧 <span id="strings-c1">Fungsi-Fungsi String</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">s</span> = <span class="str">"Hello Lua Dev!"</span>
+
+<span class="fn">print</span>(<span class="op">#</span><span class="var">s</span>)                        <span class="cmt">-- 14 (panjang string)</span>
+<span class="fn">print</span>(string.<span class="fn">len</span>(<span class="var">s</span>))            <span class="cmt">-- 14</span>
+<span class="fn">print</span>(string.<span class="fn">upper</span>(<span class="var">s</span>))          <span class="cmt">-- HELLO LUA DEV!</span>
+<span class="fn">print</span>(string.<span class="fn">lower</span>(<span class="var">s</span>))          <span class="cmt">-- hello lua dev!</span>
+<span class="fn">print</span>(string.<span class="fn">sub</span>(<span class="var">s</span>, <span class="num">1</span>, <span class="num">5</span>))      <span class="cmt">-- Hello (potong karakter 1-5)</span>
+<span class="fn">print</span>(string.<span class="fn">rep</span>(<span class="str">"Ha"</span>, <span class="num">3</span>))      <span class="cmt">-- HaHaHa (ulangi 3x)</span>
+<span class="fn">print</span>(string.<span class="fn">reverse</span>(<span class="var">s</span>))        <span class="cmt">-- !veD auL olleH</span>
+<span class="fn">print</span>(string.<span class="fn">find</span>(<span class="var">s</span>, <span class="str">"Lua"</span>))   <span class="cmt">-- 7 9 (posisi ditemukan)</span>
+<span class="fn">print</span>(string.<span class="fn">gsub</span>(<span class="var">s</span>, <span class="str">"Dev"</span>, <span class="str">"World"</span>))  <span class="cmt">-- Hello Lua World!</span>
+
+<span class="cmt">-- Format string (seperti printf)</span>
+<span class="fn">print</span>(string.<span class="fn">format</span>(<span class="str">"Nama: %s, Umur: %d"</span>, <span class="str">"Kitsune"</span>, <span class="num">17</span>))</div>
+          </div>
+          <div class="output-box"><div class="output-label">OUTPUT</div>Nama: Kitsune, Umur: 17</div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('ops')">← Operator</button>
+          <button class="btn primary" onclick="showLesson('conditions')">If/Else →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONDITIONS -->
+    <div class="lesson" id="lesson-conditions">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 6</div>
+          <h2 class="lesson-title"><em id="cond-title">If / Else</em></h2>
+          <p class="lesson-desc" id="cond-desc">Percabangan memungkinkan program mengambil keputusan berdasarkan kondisi tertentu.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>❓ <span id="cond-c1">Struktur If / Elseif / Else</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">nilai</span> = <span class="num">85</span>
+
+<span class="kw">if</span> <span class="var">nilai</span> <span class="op">>=</span> <span class="num">90</span> <span class="kw">then</span>
+    <span class="fn">print</span>(<span class="str">"A - Sangat Bagus!"</span>)
+<span class="kw">elseif</span> <span class="var">nilai</span> <span class="op">>=</span> <span class="num">80</span> <span class="kw">then</span>
+    <span class="fn">print</span>(<span class="str">"B - Bagus!"</span>)
+<span class="kw">elseif</span> <span class="var">nilai</span> <span class="op">>=</span> <span class="num">70</span> <span class="kw">then</span>
+    <span class="fn">print</span>(<span class="str">"C - Cukup"</span>)
+<span class="kw">else</span>
+    <span class="fn">print</span>(<span class="str">"D - Perlu Belajar Lagi"</span>)
+<span class="kw">end</span>
+
+<span class="cmt">-- Kondisi dengan and / or</span>
+<span class="kw">local</span> <span class="var">hp</span> = <span class="num">50</span>
+<span class="kw">local</span> <span class="var">shield</span> = <span class="kw">false</span>
+
+<span class="kw">if</span> <span class="var">hp</span> <span class="op">></span> <span class="num">0</span> <span class="kw">and</span> <span class="kw">not</span> <span class="var">shield</span> <span class="kw">then</span>
+    <span class="fn">print</span>(<span class="str">"Player masih hidup, tidak ada shield"</span>)
+<span class="kw">end</span></div>
+          </div>
+          <div class="output-box"><div class="output-label">OUTPUT</div>B - Bagus!
+Player masih hidup, tidak ada shield</div>
+        </div>
+
+        <div class="concept-card">
+          <h3>💡 <span id="cond-c2">Shortcut: and / or sebagai Ternary</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Di bahasa lain: x = kondisi ? a : b</span>
+<span class="cmt">-- Di Lua:</span>
+<span class="kw">local</span> <span class="var">hidup</span> = <span class="kw">true</span>
+<span class="kw">local</span> <span class="var">status</span> = <span class="var">hidup</span> <span class="kw">and</span> <span class="str">"Hidup"</span> <span class="kw">or</span> <span class="str">"Mati"</span>
+<span class="fn">print</span>(<span class="var">status</span>)  <span class="cmt">-- Hidup</span></div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('strings')">← String</button>
+          <button class="btn primary" onclick="showLesson('loops')">Loop →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOOPS -->
+    <div class="lesson" id="lesson-loops">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 7</div>
+          <h2 class="lesson-title"><em id="loops-title">Loop / Perulangan</em></h2>
+          <p class="lesson-desc" id="loops-desc">Loop membuat kode dijalankan berulang-ulang. Lua punya 3 jenis loop utama: for, while, dan repeat.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>🔢 <span id="loops-c1">For Loop (Numerik)</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- for mulai, selesai, langkah do</span>
+<span class="kw">for</span> <span class="var">i</span> = <span class="num">1</span>, <span class="num">5</span> <span class="kw">do</span>
+    <span class="fn">print</span>(<span class="str">"Step ke-"</span> <span class="op">..</span> <span class="var">i</span>)
+<span class="kw">end</span>
+
+<span class="cmt">-- Hitung mundur (langkah -1)</span>
+<span class="kw">for</span> <span class="var">i</span> = <span class="num">5</span>, <span class="num">1</span>, <span class="op">-</span><span class="num">1</span> <span class="kw">do</span>
+    <span class="fn">print</span>(<span class="var">i</span>)
+<span class="kw">end</span>
+
+<span class="cmt">-- Lompat 2-2 (step 2)</span>
+<span class="kw">for</span> <span class="var">i</span> = <span class="num">0</span>, <span class="num">10</span>, <span class="num">2</span> <span class="kw">do</span>
+    io.<span class="fn">write</span>(<span class="var">i</span> <span class="op">..</span> <span class="str">" "</span>)
+<span class="kw">end</span></div>
+          </div>
+          <div class="output-box"><div class="output-label">OUTPUT</div>Step ke-1 ... Step ke-5
+5 4 3 2 1
+0 2 4 6 8 10</div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🔄 <span id="loops-c2">While & Repeat</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- While: cek kondisi SEBELUM jalankan</span>
+<span class="kw">local</span> <span class="var">n</span> = <span class="num">1</span>
+<span class="kw">while</span> <span class="var">n</span> <span class="op"><=</span> <span class="num">5</span> <span class="kw">do</span>
+    <span class="fn">print</span>(<span class="str">"while: "</span> <span class="op">..</span> <span class="var">n</span>)
+    <span class="var">n</span> = <span class="var">n</span> <span class="op">+</span> <span class="num">1</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Repeat: jalankan DULU baru cek kondisi</span>
+<span class="kw">local</span> <span class="var">x</span> = <span class="num">0</span>
+<span class="kw">repeat</span>
+    <span class="var">x</span> = <span class="var">x</span> <span class="op">+</span> <span class="num">1</span>
+    <span class="fn">print</span>(<span class="str">"x = "</span> <span class="op">..</span> <span class="var">x</span>)
+<span class="kw">until</span> <span class="var">x</span> <span class="op">>=</span> <span class="num">3</span>
+
+<span class="cmt">-- Break: hentikan loop lebih awal</span>
+<span class="kw">for</span> <span class="var">i</span> = <span class="num">1</span>, <span class="num">100</span> <span class="kw">do</span>
+    <span class="kw">if</span> <span class="var">i</span> <span class="op">==</span> <span class="num">5</span> <span class="kw">then</span> <span class="kw">break</span> <span class="kw">end</span>
+    <span class="fn">print</span>(<span class="var">i</span>)
+<span class="kw">end</span></div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('conditions')">← If/Else</button>
+          <button class="btn primary" onclick="showLesson('functions')">Functions →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FUNCTIONS -->
+    <div class="lesson" id="lesson-functions">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 8</div>
+          <h2 class="lesson-title"><em id="func-title">Fungsi / Functions</em></h2>
+          <p class="lesson-desc" id="func-desc">Fungsi adalah blok kode yang bisa dipanggil berulang kali. Sangat penting untuk membuat kode yang terorganisir dan efisien.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>⚙️ <span id="func-c1">Membuat dan Memanggil Fungsi</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Fungsi sederhana</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">sapa</span>()
+    <span class="fn">print</span>(<span class="str">"Halo dari fungsi!"</span>)
+<span class="kw">end</span>
+
+<span class="fn">sapa</span>()  <span class="cmt">-- panggil fungsinya</span>
+
+<span class="cmt">-- Fungsi dengan parameter</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">sapaNama</span>(<span class="var">nama</span>)
+    <span class="fn">print</span>(<span class="str">"Halo, "</span> <span class="op">..</span> <span class="var">nama</span> <span class="op">..</span> <span class="str">"!"</span>)
+<span class="kw">end</span>
+
+<span class="fn">sapaNama</span>(<span class="str">"Kitsune"</span>)
+
+<span class="cmt">-- Fungsi dengan return (nilai balik)</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">tambah</span>(<span class="var">a</span>, <span class="var">b</span>)
+    <span class="kw">return</span> <span class="var">a</span> <span class="op">+</span> <span class="var">b</span>
+<span class="kw">end</span>
+
+<span class="kw">local</span> <span class="var">hasil</span> = <span class="fn">tambah</span>(<span class="num">5</span>, <span class="num">3</span>)
+<span class="fn">print</span>(<span class="str">"Hasil: "</span> <span class="op">..</span> <span class="var">hasil</span>)
+
+<span class="cmt">-- Fungsi return multiple values!</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">minmax</span>(<span class="var">a</span>, <span class="var">b</span>)
+    <span class="kw">return</span> <span class="fn">math.min</span>(<span class="var">a</span>, <span class="var">b</span>), <span class="fn">math.max</span>(<span class="var">a</span>, <span class="var">b</span>)
+<span class="kw">end</span>
+
+<span class="kw">local</span> <span class="var">kecil</span>, <span class="var">besar</span> = <span class="fn">minmax</span>(<span class="num">10</span>, <span class="num">3</span>)
+<span class="fn">print</span>(<span class="var">kecil</span>, <span class="var">besar</span>)  <span class="cmt">-- 3  10</span></div>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🎯 <span id="func-c2">Variadic Function (...)</span></h3>
+          <p id="func-c2-desc">Fungsi yang bisa menerima jumlah argumen tak terbatas.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="kw">function</span> <span class="fn">jumlahSemua</span>(...)
+    <span class="kw">local</span> <span class="var">args</span> = {...}
+    <span class="kw">local</span> <span class="var">total</span> = <span class="num">0</span>
+    <span class="kw">for</span> _, <span class="var">v</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">args</span>) <span class="kw">do</span>
+        <span class="var">total</span> = <span class="var">total</span> <span class="op">+</span> <span class="var">v</span>
+    <span class="kw">end</span>
+    <span class="kw">return</span> <span class="var">total</span>
+<span class="kw">end</span>
+
+<span class="fn">print</span>(<span class="fn">jumlahSemua</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>))  <span class="cmt">-- 15</span></div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('loops')">← Loop</button>
+          <button class="btn primary" onclick="showLesson('tables')">Tables →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLES -->
+    <div class="lesson" id="lesson-tables">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 9</div>
+          <h2 class="lesson-title"><em id="tbl-title">Tables</em></h2>
+          <p class="lesson-desc" id="tbl-desc">Table adalah struktur data paling penting di Lua. Bisa berfungsi sebagai array, dictionary (kamus), set, dan bahkan OOP class!</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>📋 <span id="tbl-c1">Table sebagai Array</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Array di Lua dimulai dari index 1 (bukan 0!)</span>
+<span class="kw">local</span> <span class="var">buah</span> = {<span class="str">"apel"</span>, <span class="str">"mangga"</span>, <span class="str">"jeruk"</span>}
+
+<span class="fn">print</span>(<span class="var">buah</span>[<span class="num">1</span>])  <span class="cmt">-- apel</span>
+<span class="fn">print</span>(<span class="var">buah</span>[<span class="num">2</span>])  <span class="cmt">-- mangga</span>
+<span class="fn">print</span>(<span class="op">#</span><span class="var">buah</span>)   <span class="cmt">-- 3 (panjang array)</span>
+
+<span class="cmt">-- Tambah elemen</span>
+<span class="tbl">table</span>.<span class="fn">insert</span>(<span class="var">buah</span>, <span class="str">"durian"</span>)
+
+<span class="cmt">-- Hapus elemen</span>
+<span class="tbl">table</span>.<span class="fn">remove</span>(<span class="var">buah</span>, <span class="num">1</span>)  <span class="cmt">-- hapus index 1</span>
+
+<span class="cmt">-- Loop array pakai ipairs</span>
+<span class="kw">for</span> <span class="var">i</span>, <span class="var">v</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">buah</span>) <span class="kw">do</span>
+    <span class="fn">print</span>(<span class="var">i</span>, <span class="var">v</span>)
+<span class="kw">end</span></div>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>🗂️ <span id="tbl-c2">Table sebagai Dictionary</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">player</span> = {
+    <span class="var">nama</span> = <span class="str">"Kitsune"</span>,
+    <span class="var">hp</span> = <span class="num">100</span>,
+    <span class="var">level</span> = <span class="num">25</span>,
+    <span class="var">aktif</span> = <span class="kw">true</span>
+}
+
+<span class="fn">print</span>(<span class="var">player</span>.<span class="var">nama</span>)        <span class="cmt">-- Kitsune</span>
+<span class="fn">print</span>(<span class="var">player</span>[<span class="str">"hp"</span>])       <span class="cmt">-- 100 (cara lain)</span>
+
+<span class="cmt">-- Ubah nilai</span>
+<span class="var">player</span>.<span class="var">hp</span> = <span class="num">80</span>
+
+<span class="cmt">-- Loop dictionary pakai pairs</span>
+<span class="kw">for</span> <span class="var">key</span>, <span class="var">val</span> <span class="kw">in</span> <span class="fn">pairs</span>(<span class="var">player</span>) <span class="kw">do</span>
+    <span class="fn">print</span>(<span class="var">key</span> <span class="op">..</span> <span class="str">" = "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">val</span>))
+<span class="kw">end</span></div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('functions')">← Functions</button>
+          <button class="btn primary" onclick="showLesson('oop')">OOP →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OOP -->
+    <div class="lesson" id="lesson-oop">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">CHAPTER 10</div>
+          <h2 class="lesson-title"><em id="oop-title">OOP & Class di Lua</em></h2>
+          <p class="lesson-desc" id="oop-desc">Lua tidak punya class bawaan, tapi kita bisa membuat OOP (Object-Oriented Programming) menggunakan table dan metatables.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>🏗️ <span id="oop-c1">Membuat Class dengan Table</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Buat "class" Player</span>
+<span class="kw">local</span> <span class="tbl">Player</span> = {}
+<span class="tbl">Player</span>.__index = <span class="tbl">Player</span>
+
+<span class="cmt">-- Constructor</span>
+<span class="kw">function</span> <span class="tbl">Player</span>.<span class="fn">new</span>(<span class="var">nama</span>, <span class="var">hp</span>)
+    <span class="kw">local</span> <span class="kw">self</span> = <span class="fn">setmetatable</span>({}, <span class="tbl">Player</span>)
+    <span class="kw">self</span>.<span class="var">nama</span> = <span class="var">nama</span>
+    <span class="kw">self</span>.<span class="var">hp</span>   = <span class="var">hp</span>
+    <span class="kw">return</span> <span class="kw">self</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Method</span>
+<span class="kw">function</span> <span class="tbl">Player</span>:<span class="fn">info</span>()
+    <span class="fn">print</span>(<span class="str">"Nama: "</span> <span class="op">..</span> <span class="kw">self</span>.<span class="var">nama</span> <span class="op">..</span> <span class="str">" | HP: "</span> <span class="op">..</span> <span class="kw">self</span>.<span class="var">hp</span>)
+<span class="kw">end</span>
+
+<span class="kw">function</span> <span class="tbl">Player</span>:<span class="fn">takeDamage</span>(<span class="var">damage</span>)
+    <span class="kw">self</span>.<span class="var">hp</span> = <span class="kw">self</span>.<span class="var">hp</span> <span class="op">-</span> <span class="var">damage</span>
+    <span class="fn">print</span>(<span class="kw">self</span>.<span class="var">nama</span> <span class="op">..</span> <span class="str">" kena damage "</span> <span class="op">..</span> <span class="var">damage</span>)
+<span class="kw">end</span>
+
+<span class="cmt">-- Buat instance</span>
+<span class="kw">local</span> <span class="var">p1</span> = <span class="tbl">Player</span>.<span class="fn">new</span>(<span class="str">"Kitsune"</span>, <span class="num">100</span>)
+<span class="var">p1</span>:<span class="fn">info</span>()
+<span class="var">p1</span>:<span class="fn">takeDamage</span>(<span class="num">30</span>)
+<span class="var">p1</span>:<span class="fn">info</span>()</div>
+          </div>
+          <div class="output-box"><div class="output-label">OUTPUT</div>Nama: Kitsune | HP: 100
+Kitsune kena damage 30
+Nama: Kitsune | HP: 70</div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('tables')">← Tables</button>
+          <button class="btn primary" onclick="showLesson('roblox')">Roblox Lua →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROBLOX -->
+    <div class="lesson" id="lesson-roblox">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">ROBLOX</div>
+          <h2 class="lesson-title"><em id="rblx-title">Intro Roblox Lua</em></h2>
+          <p class="lesson-desc" id="rblx-desc">Roblox menggunakan versi Lua yang disebut Luau. Ada beberapa konsep penting di Roblox yang harus kamu pahami.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>🌐 <span id="rblx-c1">Services Penting Roblox</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Mengambil services dari game</span>
+<span class="kw">local</span> <span class="var">Players</span>       = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">RunService</span>    = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"RunService"</span>)
+<span class="kw">local</span> <span class="var">TweenService</span>  = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"TweenService"</span>)
+<span class="kw">local</span> <span class="var">UserInputSrvc</span> = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"UserInputService"</span>)
+<span class="kw">local</span> <span class="var">HttpService</span>   = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"HttpService"</span>)
+<span class="kw">local</span> <span class="var">ReplicatedSto</span> = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"ReplicatedStorage"</span>)
+<span class="kw">local</span> <span class="var">Workspace</span>     = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Workspace"</span>)
+
+<span class="cmt">-- Mendapatkan player lokal</span>
+<span class="kw">local</span> <span class="var">LocalPlayer</span>  = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+<span class="kw">local</span> <span class="var">Character</span>    = <span class="var">LocalPlayer</span>.<span class="var">Character</span>
+<span class="kw">local</span> <span class="var">HumanoidRoot</span> = <span class="var">Character</span>:FindFirstChild(<span class="str">"HumanoidRootPart"</span>)
+<span class="kw">local</span> <span class="var">Humanoid</span>     = <span class="var">Character</span>:FindFirstChild(<span class="str">"Humanoid"</span>)</div>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>⏱️ <span id="rblx-c2">Wait, Delay, dan Spawn</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Pause eksekusi selama N detik</span>
+<span class="fn">task.wait</span>(<span class="num">2</span>)  <span class="cmt">-- tunggu 2 detik (pakai task.wait, bukan wait())</span>
+
+<span class="cmt">-- Jalankan setelah delay tanpa blocking</span>
+<span class="fn">task.delay</span>(<span class="num">3</span>, <span class="kw">function</span>()
+    <span class="fn">print</span>(<span class="str">"Ini dijalankan 3 detik kemudian"</span>)
+<span class="kw">end</span>)
+
+<span class="cmt">-- Jalankan di thread baru (tidak blocking)</span>
+<span class="fn">task.spawn</span>(<span class="kw">function</span>()
+    <span class="kw">while</span> <span class="kw">true</span> <span class="kw">do</span>
+        <span class="fn">print</span>(<span class="str">"Loop terus di background!"</span>)
+        <span class="fn">task.wait</span>(<span class="num">1</span>)
+    <span class="kw">end</span>
+<span class="kw">end</span>)
+
+<span class="fn">print</span>(<span class="str">"Kode ini tetap jalan!"</span>)</div>
+          </div>
+        </div>
+
+        <div class="info-box tip">
+          <span class="ib-icon">💡</span>
+          <span id="rblx-tip">Selalu pakai <code>task.wait()</code> bukan <code>wait()</code> di Roblox modern — lebih efisien dan akurat!</span>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('oop')">← OOP</button>
+          <button class="btn primary" onclick="showLesson('gui')">GUI & Frame →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUI -->
+    <div class="lesson" id="lesson-gui">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">ROBLOX GUI</div>
+          <h2 class="lesson-title"><em id="gui-title">Frame & GUI di Roblox</em></h2>
+          <p class="lesson-desc" id="gui-desc">GUI (Graphical User Interface) di Roblox dibuat pakai ScreenGui, Frame, TextLabel, TextButton, dan elemen lainnya via kode Lua.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>🖼️ <span id="gui-c1">Membuat ScreenGui & Frame dari Script</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LOCAL SCRIPT</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">Players</span>     = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">LocalPlayer</span> = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+<span class="kw">local</span> <span class="var">PlayerGui</span>   = <span class="var">LocalPlayer</span>:<span class="fn">WaitForChild</span>(<span class="str">"PlayerGui"</span>)
+
+<span class="cmt">-- 1. Buat ScreenGui</span>
+<span class="kw">local</span> <span class="var">screenGui</span>        = <span class="fn">Instance.new</span>(<span class="str">"ScreenGui"</span>)
+<span class="var">screenGui</span>.<span class="var">Name</span>          = <span class="str">"MyGui"</span>
+<span class="var">screenGui</span>.<span class="var">ResetOnSpawn</span>   = <span class="kw">false</span>
+<span class="var">screenGui</span>.<span class="var">Parent</span>         = <span class="var">PlayerGui</span>
+
+<span class="cmt">-- 2. Buat Frame (container utama)</span>
+<span class="kw">local</span> <span class="var">frame</span>           = <span class="fn">Instance.new</span>(<span class="str">"Frame"</span>)
+<span class="var">frame</span>.<span class="var">Size</span>              = <span class="fn">UDim2.new</span>(<span class="num">0</span>, <span class="num">300</span>, <span class="num">0</span>, <span class="num">200</span>)
+<span class="var">frame</span>.<span class="var">Position</span>          = <span class="fn">UDim2.new</span>(<span class="num">0.5</span>, <span class="op">-</span><span class="num">150</span>, <span class="num">0.5</span>, <span class="op">-</span><span class="num">100</span>)
+<span class="var">frame</span>.<span class="var">BackgroundColor3</span>  = <span class="fn">Color3.fromRGB</span>(<span class="num">30</span>, <span class="num">30</span>, <span class="num">40</span>)
+<span class="var">frame</span>.<span class="var">BorderSizePixel</span>   = <span class="num">0</span>
+<span class="var">frame</span>.<span class="var">Parent</span>             = <span class="var">screenGui</span>
+
+<span class="cmt">-- 3. Tambah sudut melengkung</span>
+<span class="kw">local</span> <span class="var">corner</span>    = <span class="fn">Instance.new</span>(<span class="str">"UICorner"</span>)
+<span class="var">corner</span>.<span class="var">CornerRadius</span> = <span class="fn">UDim.new</span>(<span class="num">0</span>, <span class="num">12</span>)
+<span class="var">corner</span>.<span class="var">Parent</span>       = <span class="var">frame</span>
+
+<span class="cmt">-- 4. Buat TextLabel (teks biasa)</span>
+<span class="kw">local</span> <span class="var">label</span>           = <span class="fn">Instance.new</span>(<span class="str">"TextLabel"</span>)
+<span class="var">label</span>.<span class="var">Size</span>              = <span class="fn">UDim2.new</span>(<span class="num">1</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">50</span>)
+<span class="var">label</span>.<span class="var">Position</span>          = <span class="fn">UDim2.new</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>)
+<span class="var">label</span>.<span class="var">Text</span>               = <span class="str">"🌙 LuaLearn GUI!"</span>
+<span class="var">label</span>.<span class="var">TextColor3</span>         = <span class="fn">Color3.fromRGB</span>(<span class="num">255</span>, <span class="num">255</span>, <span class="num">255</span>)
+<span class="var">label</span>.<span class="var">TextSize</span>           = <span class="num">18</span>
+<span class="var">label</span>.<span class="var">BackgroundTransparency</span> = <span class="num">1</span>
+<span class="var">label</span>.<span class="var">Font</span>               = <span class="fn">Enum.Font.GothamBold</span>
+<span class="var">label</span>.<span class="var">Parent</span>             = <span class="var">frame</span>
+
+<span class="cmt">-- 5. Buat TextButton (tombol)</span>
+<span class="kw">local</span> <span class="var">btn</span>             = <span class="fn">Instance.new</span>(<span class="str">"TextButton"</span>)
+<span class="var">btn</span>.<span class="var">Size</span>                = <span class="fn">UDim2.new</span>(<span class="num">0.8</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">40</span>)
+<span class="var">btn</span>.<span class="var">Position</span>            = <span class="fn">UDim2.new</span>(<span class="num">0.1</span>, <span class="num">0</span>, <span class="num">0.6</span>, <span class="num">0</span>)
+<span class="var">btn</span>.<span class="var">Text</span>                 = <span class="str">"Klik Aku!"</span>
+<span class="var">btn</span>.<span class="var">BackgroundColor3</span>    = <span class="fn">Color3.fromRGB</span>(<span class="num">124</span>, <span class="num">106</span>, <span class="num">247</span>)
+<span class="var">btn</span>.<span class="var">TextColor3</span>           = <span class="fn">Color3.fromRGB</span>(<span class="num">255</span>, <span class="num">255</span>, <span class="num">255</span>)
+<span class="var">btn</span>.<span class="var">Font</span>                 = <span class="fn">Enum.Font.GothamBold</span>
+<span class="var">btn</span>.<span class="var">TextSize</span>             = <span class="num">14</span>
+<span class="var">btn</span>.<span class="var">BorderSizePixel</span>     = <span class="num">0</span>
+<span class="var">btn</span>.<span class="var">Parent</span>               = <span class="var">frame</span>
+
+<span class="cmt">-- 6. Event saat tombol diklik</span>
+<span class="var">btn</span>.<span class="var">MouseButton1Click</span>:<span class="fn">Connect</span>(<span class="kw">function</span>()
+    <span class="var">label</span>.<span class="var">Text</span> = <span class="str">"Tombol diklik! ✅"</span>
+    <span class="fn">print</span>(<span class="str">"Tombol diklik!"</span>)
+<span class="kw">end</span>)</div>
+          </div>
+        </div>
+
+        <div class="concept-card">
+          <h3>📐 <span id="gui-c2">Memahami UDim2</span></h3>
+          <p id="gui-c2-desc">UDim2 adalah cara Roblox mengatur ukuran dan posisi. Formatnya: <code>UDim2.new(scaleX, offsetX, scaleY, offsetY)</code></p>
+          <table class="data-table">
+            <tr><th id="th-udim">UDim2</th><th id="th-arti">Artinya</th></tr>
+            <tr><td>UDim2.new(1, 0, 1, 0)</td><td id="udim1">Penuh layar (100% x 100%)</td></tr>
+            <tr><td>UDim2.new(0.5, 0, 0.5, 0)</td><td id="udim2">Tengah layar (50% x 50%)</td></tr>
+            <tr><td>UDim2.new(0, 200, 0, 50)</td><td id="udim3">200px lebar, 50px tinggi (pixel murni)</td></tr>
+            <tr><td>UDim2.new(0.5, -100, 0, 0)</td><td id="udim4">50% layar dikurangi 100px (untuk centering)</td></tr>
+          </table>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('roblox')">← Roblox Intro</button>
+          <button class="btn primary" onclick="showLesson('events')">Events →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENTS -->
+    <div class="lesson" id="lesson-events">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">ROBLOX EVENTS</div>
+          <h2 class="lesson-title"><em id="ev-title">Events & Input</em></h2>
+          <p class="lesson-desc" id="ev-desc">Events di Roblox memungkinkan kode bereaksi terhadap aksi seperti klik, keyboard, dan kejadian game.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>⚡ <span id="ev-c1">Common Events</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">UIS</span>         = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"UserInputService"</span>)
+<span class="kw">local</span> <span class="var">Players</span>     = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">LocalPlayer</span> = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+
+<span class="cmt">-- Input keyboard</span>
+<span class="var">UIS</span>.<span class="var">InputBegan</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">input</span>, <span class="var">gameProcessed</span>)
+    <span class="kw">if</span> <span class="var">gameProcessed</span> <span class="kw">then</span> <span class="kw">return</span> <span class="kw">end</span>  <span class="cmt">-- ignore jika di chat</span>
+    <span class="kw">if</span> <span class="var">input</span>.<span class="var">KeyCode</span> <span class="op">==</span> <span class="fn">Enum.KeyCode.E</span> <span class="kw">then</span>
+        <span class="fn">print</span>(<span class="str">"Tombol E ditekan!"</span>)
+    <span class="kw">end</span>
+<span class="kw">end</span>)
+
+<span class="cmt">-- Player respawn</span>
+<span class="var">LocalPlayer</span>.<span class="var">CharacterAdded</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">char</span>)
+    <span class="fn">print</span>(<span class="str">"Player spawn!"</span>)
+    <span class="kw">local</span> <span class="var">hum</span> = <span class="var">char</span>:<span class="fn">WaitForChild</span>(<span class="str">"Humanoid"</span>)
+    <span class="var">hum</span>.<span class="var">Died</span>:<span class="fn">Connect</span>(<span class="kw">function</span>()
+        <span class="fn">print</span>(<span class="str">"Player mati!"</span>)
+    <span class="kw">end</span>)
+<span class="kw">end</span>)
+
+<span class="cmt">-- RunService Heartbeat (setiap frame)</span>
+<span class="kw">local</span> <span class="var">RS</span> = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"RunService"</span>)
+<span class="var">RS</span>.<span class="var">Heartbeat</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">deltaTime</span>)
+    <span class="cmt">-- Dijalankan setiap frame (~60x per detik)</span>
+    <span class="cmt">-- deltaTime = waktu sejak frame terakhir</span>
+<span class="kw">end</span>)</div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('gui')">← GUI</button>
+          <button class="btn primary" onclick="showLesson('autofarm')">Auto Farm →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTO FARM -->
+    <div class="lesson" id="lesson-autofarm">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">SCRIPT POPULER</div>
+          <h2 class="lesson-title"><em id="af-title">Auto Farm</em></h2>
+          <p class="lesson-desc" id="af-desc">Auto Farm adalah script yang membuat karakter otomatis mengumpulkan item atau mengalahkan musuh secara berulang tanpa input manual.</p>
+        </div>
+
+        <div class="info-box warn">
+          <span class="ib-icon">⚠️</span>
+          <span id="af-warn">Script ini hanya untuk pembelajaran. Penggunaan exploit di game orang lain bisa menyebabkan ban. Gunakan di private server atau game buatan sendiri!</span>
+        </div>
+
+        <div class="concept-card">
+          <h3>🌾 <span id="af-c1">Template Auto Farm (Teleport ke NPC)</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">Players</span>   = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">lp</span>        = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+<span class="kw">local</span> <span class="var">farming</span>   = <span class="kw">false</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">getChar</span>()
+    <span class="kw">return</span> <span class="var">lp</span>.<span class="var">Character</span>
+<span class="kw">end</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">teleportTo</span>(<span class="var">position</span>)
+    <span class="kw">local</span> <span class="var">char</span> = <span class="fn">getChar</span>()
+    <span class="kw">if</span> <span class="var">char</span> <span class="kw">then</span>
+        <span class="kw">local</span> <span class="var">root</span> = <span class="var">char</span>:FindFirstChild(<span class="str">"HumanoidRootPart"</span>)
+        <span class="kw">if</span> <span class="var">root</span> <span class="kw">then</span>
+            <span class="var">root</span>.<span class="var">CFrame</span> = <span class="fn">CFrame.new</span>(<span class="var">position</span>)
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">autoFarm</span>()
+    <span class="kw">while</span> <span class="var">farming</span> <span class="kw">do</span>
+        <span class="cmt">-- Cari semua NPC/Mob di workspace</span>
+        <span class="kw">for</span> _, <span class="var">obj</span> <span class="kw">in</span> <span class="fn">pairs</span>(<span class="fn">workspace</span>:GetDescendants()) <span class="kw">do</span>
+            <span class="kw">if</span> <span class="kw">not</span> <span class="var">farming</span> <span class="kw">then</span> <span class="kw">break</span> <span class="kw">end</span>
+            <span class="cmt">-- Ganti "Zombie" dengan nama NPC di game kamu</span>
+            <span class="kw">if</span> <span class="var">obj</span>.<span class="var">Name</span> <span class="op">==</span> <span class="str">"Zombie"</span> <span class="kw">and</span> <span class="var">obj</span>:IsA(<span class="str">"Model"</span>) <span class="kw">then</span>
+                <span class="kw">local</span> <span class="var">hum</span> = <span class="var">obj</span>:FindFirstChild(<span class="str">"Humanoid"</span>)
+                <span class="kw">if</span> <span class="var">hum</span> <span class="kw">and</span> <span class="var">hum</span>.<span class="var">Health</span> <span class="op">></span> <span class="num">0</span> <span class="kw">then</span>
+                    <span class="kw">local</span> <span class="var">root</span> = <span class="var">obj</span>:FindFirstChild(<span class="str">"HumanoidRootPart"</span>)
+                    <span class="kw">if</span> <span class="var">root</span> <span class="kw">then</span>
+                        <span class="fn">teleportTo</span>(<span class="var">root</span>.<span class="var">Position</span>)
+                        <span class="fn">task.wait</span>(<span class="num">0.1</span>)
+                    <span class="kw">end</span>
+                <span class="kw">end</span>
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+        <span class="fn">task.wait</span>(<span class="num">0.5</span>)
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Toggle dengan tombol F</span>
+<span class="kw">local</span> <span class="var">UIS</span> = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"UserInputService"</span>)
+<span class="var">UIS</span>.<span class="var">InputBegan</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">inp</span>, <span class="var">gp</span>)
+    <span class="kw">if</span> <span class="var">gp</span> <span class="kw">then</span> <span class="kw">return</span> <span class="kw">end</span>
+    <span class="kw">if</span> <span class="var">inp</span>.<span class="var">KeyCode</span> <span class="op">==</span> <span class="fn">Enum.KeyCode.F</span> <span class="kw">then</span>
+        <span class="var">farming</span> = <span class="kw">not</span> <span class="var">farming</span>
+        <span class="fn">print</span>(<span class="str">"Auto Farm: "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">farming</span>))
+        <span class="kw">if</span> <span class="var">farming</span> <span class="kw">then</span>
+            <span class="fn">task.spawn</span>(<span class="fn">autoFarm</span>)
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>)</div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('events')">← Events</button>
+          <button class="btn primary" onclick="showLesson('esp')">ESP →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESP -->
+    <div class="lesson" id="lesson-esp">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">SCRIPT POPULER</div>
+          <h2 class="lesson-title"><em id="esp-title">ESP / Highlight</em></h2>
+          <p class="lesson-desc" id="esp-desc">ESP (Extra Sensory Perception) membuat player atau objek terlihat melalui dinding menggunakan Highlight atau BillboardGui.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>👁️ <span id="esp-c1">ESP menggunakan Highlight</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">Players</span>     = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">LocalPlayer</span> = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">addESP</span>(<span class="var">player</span>)
+    <span class="kw">if</span> <span class="var">player</span> <span class="op">==</span> <span class="var">LocalPlayer</span> <span class="kw">then</span> <span class="kw">return</span> <span class="kw">end</span>
+
+    <span class="var">player</span>.<span class="var">CharacterAdded</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">char</span>)
+        <span class="fn">task.wait</span>(<span class="num">0.5</span>)
+        <span class="kw">local</span> <span class="var">hl</span>                  = <span class="fn">Instance.new</span>(<span class="str">"Highlight"</span>)
+        <span class="var">hl</span>.<span class="var">FillColor</span>               = <span class="fn">Color3.fromRGB</span>(<span class="num">255</span>, <span class="num">0</span>, <span class="num">0</span>)
+        <span class="var">hl</span>.<span class="var">OutlineColor</span>            = <span class="fn">Color3.fromRGB</span>(<span class="num">255</span>, <span class="num">255</span>, <span class="num">255</span>)
+        <span class="var">hl</span>.<span class="var">FillTransparency</span>        = <span class="num">0.5</span>
+        <span class="var">hl</span>.<span class="var">OutlineTransparency</span>     = <span class="num">0</span>
+        <span class="var">hl</span>.<span class="var">DepthMode</span>               = <span class="fn">Enum.HighlightDepthMode.AlwaysOnTop</span>
+        <span class="var">hl</span>.<span class="var">Adornee</span>                 = <span class="var">char</span>
+        <span class="var">hl</span>.<span class="var">Parent</span>                  = <span class="var">char</span>
+    <span class="kw">end</span>)
+
+    <span class="cmt">-- Kalau sudah punya karakter</span>
+    <span class="kw">if</span> <span class="var">player</span>.<span class="var">Character</span> <span class="kw">then</span>
+        <span class="kw">local</span> <span class="var">hl</span>              = <span class="fn">Instance.new</span>(<span class="str">"Highlight"</span>)
+        <span class="var">hl</span>.<span class="var">FillColor</span>           = <span class="fn">Color3.fromRGB</span>(<span class="num">255</span>, <span class="num">0</span>, <span class="num">0</span>)
+        <span class="var">hl</span>.<span class="var">OutlineColor</span>        = <span class="fn">Color3.fromRGB</span>(<span class="num">255</span>, <span class="num">255</span>, <span class="num">255</span>)
+        <span class="var">hl</span>.<span class="var">FillTransparency</span>    = <span class="num">0.5</span>
+        <span class="var">hl</span>.<span class="var">DepthMode</span>           = <span class="fn">Enum.HighlightDepthMode.AlwaysOnTop</span>
+        <span class="var">hl</span>.<span class="var">Adornee</span>             = <span class="var">player</span>.<span class="var">Character</span>
+        <span class="var">hl</span>.<span class="var">Parent</span>              = <span class="var">player</span>.<span class="var">Character</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Pasang ke semua player yang sudah ada</span>
+<span class="kw">for</span> _, <span class="var">p</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">Players</span>:<span class="fn">GetPlayers</span>()) <span class="kw">do</span>
+    <span class="fn">addESP</span>(<span class="var">p</span>)
+<span class="kw">end</span>
+
+<span class="cmt">-- Pasang ke player yang join setelahnya</span>
+<span class="var">Players</span>.<span class="var">PlayerAdded</span>:<span class="fn">Connect</span>(<span class="fn">addESP</span>)</div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('autofarm')">← Auto Farm</button>
+          <button class="btn primary" onclick="showLesson('speed')">Speed Hack →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPEED -->
+    <div class="lesson" id="lesson-speed">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">SCRIPT POPULER</div>
+          <h2 class="lesson-title"><em id="sp-title">Speed & Jump Hack</em></h2>
+          <p class="lesson-desc" id="sp-desc">Script untuk mengubah kecepatan lari dan tinggi lompatan karakter di Roblox.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>💨 <span id="sp-c1">Speed & Jump Script dengan Toggle GUI</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">Players</span>   = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">lp</span>        = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+
+<span class="cmt">-- Konfigurasi</span>
+<span class="kw">local</span> <span class="var">speedValue</span>  = <span class="num">50</span>   <span class="cmt">-- Default 16</span>
+<span class="kw">local</span> <span class="var">jumpValue</span>   = <span class="num">80</span>   <span class="cmt">-- Default 50</span>
+<span class="kw">local</span> <span class="var">speedOn</span>     = <span class="kw">false</span>
+<span class="kw">local</span> <span class="var">jumpOn</span>      = <span class="kw">false</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">getHumanoid</span>()
+    <span class="kw">local</span> <span class="var">char</span> = <span class="var">lp</span>.<span class="var">Character</span>
+    <span class="kw">return</span> <span class="var">char</span> <span class="kw">and</span> <span class="var">char</span>:FindFirstChild(<span class="str">"Humanoid"</span>)
+<span class="kw">end</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">applySpeed</span>(<span class="var">on</span>)
+    <span class="kw">local</span> <span class="var">hum</span> = <span class="fn">getHumanoid</span>()
+    <span class="kw">if</span> <span class="var">hum</span> <span class="kw">then</span>
+        <span class="var">hum</span>.<span class="var">WalkSpeed</span> = <span class="var">on</span> <span class="kw">and</span> <span class="var">speedValue</span> <span class="kw">or</span> <span class="num">16</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">applyJump</span>(<span class="var">on</span>)
+    <span class="kw">local</span> <span class="var">hum</span> = <span class="fn">getHumanoid</span>()
+    <span class="kw">if</span> <span class="var">hum</span> <span class="kw">then</span>
+        <span class="var">hum</span>.<span class="var">JumpPower</span> = <span class="var">on</span> <span class="kw">and</span> <span class="var">jumpValue</span> <span class="kw">or</span> <span class="num">50</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Terapkan ulang saat spawn</span>
+<span class="var">lp</span>.<span class="var">CharacterAdded</span>:<span class="fn">Connect</span>(<span class="kw">function</span>()
+    <span class="fn">task.wait</span>(<span class="num">0.5</span>)
+    <span class="fn">applySpeed</span>(<span class="var">speedOn</span>)
+    <span class="fn">applyJump</span>(<span class="var">jumpOn</span>)
+<span class="kw">end</span>)
+
+<span class="cmt">-- Toggle dengan tombol</span>
+<span class="kw">local</span> <span class="var">UIS</span> = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"UserInputService"</span>)
+<span class="var">UIS</span>.<span class="var">InputBegan</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">inp</span>, <span class="var">gp</span>)
+    <span class="kw">if</span> <span class="var">gp</span> <span class="kw">then</span> <span class="kw">return</span> <span class="kw">end</span>
+    <span class="kw">if</span> <span class="var">inp</span>.<span class="var">KeyCode</span> <span class="op">==</span> <span class="fn">Enum.KeyCode.Q</span> <span class="kw">then</span>
+        <span class="var">speedOn</span> = <span class="kw">not</span> <span class="var">speedOn</span>
+        <span class="fn">applySpeed</span>(<span class="var">speedOn</span>)
+        <span class="fn">print</span>(<span class="str">"Speed: "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">speedOn</span>))
+    <span class="kw">elseif</span> <span class="var">inp</span>.<span class="var">KeyCode</span> <span class="op">==</span> <span class="fn">Enum.KeyCode.J</span> <span class="kw">then</span>
+        <span class="var">jumpOn</span> = <span class="kw">not</span> <span class="var">jumpOn</span>
+        <span class="fn">applyJump</span>(<span class="var">jumpOn</span>)
+        <span class="fn">print</span>(<span class="str">"Jump: "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">jumpOn</span>))
+    <span class="kw">end</span>
+<span class="kw">end</span>)</div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('esp')">← ESP</button>
+          <button class="btn primary" onclick="showLesson('brainrot')">Auto Brainrots →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRAINROTS -->
+    <div class="lesson" id="lesson-brainrot">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">🧠 SCRIPT POPULER</div>
+          <h2 class="lesson-title"><em id="br-title">Auto Find Brainrots</em></h2>
+          <p class="lesson-desc" id="br-desc">Script untuk otomatis menemukan dan berinteraksi dengan Brainrot entities di game Roblox. Konsep: scan workspace, filter berdasarkan nama, teleport dan interaksi.</p>
+        </div>
+
+        <div class="info-box cool">
+          <span class="ib-icon">🧠</span>
+          <span id="br-tip">Script ini menunjukkan cara scan workspace, filter model berdasarkan nama, dan auto-interact — konsep yang bisa dipakai di banyak game Roblox!</span>
+        </div>
+
+        <div class="concept-card">
+          <h3>🔍 <span id="br-c1">Auto Find & Interact Script</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">ROBLOX LUA</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="kw">local</span> <span class="var">Players</span>   = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"Players"</span>)
+<span class="kw">local</span> <span class="var">lp</span>        = <span class="var">Players</span>.<span class="var">LocalPlayer</span>
+<span class="kw">local</span> <span class="var">running</span>   = <span class="kw">false</span>
+
+<span class="cmt">-- Daftar nama Brainrot yang dicari (sesuaikan dengan game)</span>
+<span class="kw">local</span> <span class="var">BRAINROT_NAMES</span> = {
+    <span class="str">"Tralalero"</span>, <span class="str">"Bombardiro"</span>, <span class="str">"Capybara"</span>,
+    <span class="str">"Tung Tung"</span>, <span class="str">"Ballerina"</span>, <span class="str">"Crocodilo"</span>
+}
+
+<span class="cmt">-- Cek apakah nama ada di list</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">isBrainrot</span>(<span class="var">name</span>)
+    <span class="kw">for</span> _, <span class="var">brName</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">BRAINROT_NAMES</span>) <span class="kw">do</span>
+        <span class="kw">if</span> <span class="var">name</span>:<span class="fn">lower</span>():<span class="fn">find</span>(<span class="var">brName</span>:<span class="fn">lower</span>()) <span class="kw">then</span>
+            <span class="kw">return</span> <span class="kw">true</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    <span class="kw">return</span> <span class="kw">false</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Teleport karakter ke posisi tertentu</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">tpTo</span>(<span class="var">pos</span>)
+    <span class="kw">local</span> <span class="var">char</span> = <span class="var">lp</span>.<span class="var">Character</span>
+    <span class="kw">if</span> <span class="var">char</span> <span class="kw">then</span>
+        <span class="kw">local</span> <span class="var">root</span> = <span class="var">char</span>:FindFirstChild(<span class="str">"HumanoidRootPart"</span>)
+        <span class="kw">if</span> <span class="var">root</span> <span class="kw">then</span>
+            <span class="var">root</span>.<span class="var">CFrame</span> = <span class="fn">CFrame.new</span>(<span class="var">pos</span> <span class="op">+</span> <span class="fn">Vector3.new</span>(<span class="num">0</span>, <span class="num">3</span>, <span class="num">0</span>))
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Cari semua brainrot di workspace</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">findBrainrots</span>()
+    <span class="kw">local</span> <span class="var">found</span> = {}
+    <span class="kw">for</span> _, <span class="var">obj</span> <span class="kw">in</span> <span class="fn">pairs</span>(<span class="fn">workspace</span>:GetDescendants()) <span class="kw">do</span>
+        <span class="kw">if</span> <span class="var">obj</span>:IsA(<span class="str">"Model"</span>) <span class="kw">and</span> <span class="fn">isBrainrot</span>(<span class="var">obj</span>.<span class="var">Name</span>) <span class="kw">then</span>
+            <span class="kw">local</span> <span class="var">root</span> = <span class="var">obj</span>:FindFirstChild(<span class="str">"HumanoidRootPart"</span>)
+                       <span class="kw">or</span> <span class="var">obj</span>:FindFirstChild(<span class="str">"PrimaryPart"</span>)
+            <span class="kw">if</span> <span class="var">root</span> <span class="kw">then</span>
+                <span class="tbl">table</span>.<span class="fn">insert</span>(<span class="var">found</span>, {<span class="var">model</span> = <span class="var">obj</span>, <span class="var">pos</span> = <span class="var">root</span>.<span class="var">Position</span>})
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    <span class="kw">return</span> <span class="var">found</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Main loop</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">autoFind</span>()
+    <span class="kw">while</span> <span class="var">running</span> <span class="kw">do</span>
+        <span class="kw">local</span> <span class="var">list</span> = <span class="fn">findBrainrots</span>()
+        <span class="fn">print</span>(<span class="str">"Ditemukan: "</span> <span class="op">..</span> <span class="op">#</span><span class="var">list</span> <span class="op">..</span> <span class="str">" brainrot"</span>)
+        <span class="kw">for</span> _, <span class="var">data</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">list</span>) <span class="kw">do</span>
+            <span class="kw">if</span> <span class="kw">not</span> <span class="var">running</span> <span class="kw">then</span> <span class="kw">break</span> <span class="kw">end</span>
+            <span class="fn">print</span>(<span class="str">"Menuju: "</span> <span class="op">..</span> <span class="var">data</span>.<span class="var">model</span>.<span class="var">Name</span>)
+            <span class="fn">tpTo</span>(<span class="var">data</span>.<span class="var">pos</span>)
+            <span class="fn">task.wait</span>(<span class="num">1</span>)  <span class="cmt">-- waktu interaksi</span>
+        <span class="kw">end</span>
+        <span class="fn">task.wait</span>(<span class="num">2</span>)
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="cmt">-- Toggle dengan tombol B</span>
+<span class="kw">local</span> <span class="var">UIS</span> = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"UserInputService"</span>)
+<span class="var">UIS</span>.<span class="var">InputBegan</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">inp</span>, <span class="var">gp</span>)
+    <span class="kw">if</span> <span class="var">gp</span> <span class="kw">then</span> <span class="kw">return</span> <span class="kw">end</span>
+    <span class="kw">if</span> <span class="var">inp</span>.<span class="var">KeyCode</span> <span class="op">==</span> <span class="fn">Enum.KeyCode.B</span> <span class="kw">then</span>
+        <span class="var">running</span> = <span class="kw">not</span> <span class="var">running</span>
+        <span class="fn">print</span>(<span class="str">"Auto Brainrot: "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">running</span>))
+        <span class="kw">if</span> <span class="var">running</span> <span class="kw">then</span>
+            <span class="fn">task.spawn</span>(<span class="fn">autoFind</span>)
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>)</div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('speed')">← Speed Hack</button>
+          <button class="btn primary" onclick="showLesson('remote')">Remote Events →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMOTE EVENTS -->
+    <div class="lesson" id="lesson-remote">
+      <div class="content">
+        <div class="lesson-header">
+          <div class="lesson-tag">ROBLOX ADVANCED</div>
+          <h2 class="lesson-title"><em id="re-title">Remote Events</em></h2>
+          <p class="lesson-desc" id="re-desc">RemoteEvent dipakai untuk komunikasi antara Client (LocalScript) dan Server (Script). Sangat penting untuk membuat fitur multiplayer.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>📡 <span id="re-c1">Cara Kerja RemoteEvent</span></h3>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">SERVER SCRIPT</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Di Script (Server) — buat RemoteEvent</span>
+<span class="kw">local</span> <span class="var">RS</span>     = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"ReplicatedStorage"</span>)
+<span class="kw">local</span> <span class="var">event</span>  = <span class="fn">Instance.new</span>(<span class="str">"RemoteEvent"</span>)
+<span class="var">event</span>.<span class="var">Name</span>   = <span class="str">"MyEvent"</span>
+<span class="var">event</span>.<span class="var">Parent</span> = <span class="var">RS</span>
+
+<span class="cmt">-- Terima event dari client</span>
+<span class="var">event</span>.<span class="var">OnServerEvent</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">player</span>, <span class="var">data</span>)
+    <span class="fn">print</span>(<span class="var">player</span>.<span class="var">Name</span> <span class="op">..</span> <span class="str">" kirim: "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">data</span>))
+    <span class="cmt">-- Kirim balik ke semua client</span>
+    <span class="var">event</span>:<span class="fn">FireAllClients</span>(<span class="str">"Server menerima: "</span> <span class="op">..</span> <span class="fn">tostring</span>(<span class="var">data</span>))
+<span class="kw">end</span>)</div>
+          </div>
+
+          <div class="code-block" style="margin-top:12px">
+            <div class="code-header">
+              <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+              <span class="code-label">LOCAL SCRIPT (CLIENT)</span>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+            <div class="code-body"><span class="cmt">-- Di LocalScript (Client) — gunakan RemoteEvent</span>
+<span class="kw">local</span> <span class="var">RS</span>    = <span class="fn">game</span>:<span class="fn">GetService</span>(<span class="str">"ReplicatedStorage"</span>)
+<span class="kw">local</span> <span class="var">event</span> = <span class="var">RS</span>:<span class="fn">WaitForChild</span>(<span class="str">"MyEvent"</span>)
+
+<span class="cmt">-- Kirim ke server</span>
+<span class="var">event</span>:<span class="fn">FireServer</span>(<span class="str">"Halo Server!"</span>)
+
+<span class="cmt">-- Terima dari server</span>
+<span class="var">event</span>.<span class="var">OnClientEvent</span>:<span class="fn">Connect</span>(<span class="kw">function</span>(<span class="var">msg</span>)
+    <span class="fn">print</span>(<span class="str">"Dari server: "</span> <span class="op">..</span> <span class="var">msg</span>)
+<span class="kw">end</span>)</div>
+          </div>
+        </div>
+
+        <div class="info-box tip">
+          <span class="ib-icon">💡</span>
+          <span id="re-tip">Selalu validasi data di server! Jangan percaya data yang dikirim client begitu saja — karena bisa dimanipulasi oleh exploiter.</span>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" onclick="showLesson('brainrot')">← Auto Brainrots</button>
+          <button class="btn primary" onclick="showLesson('home')">🏠 <span id="re-home">Kembali ke Beranda</span></button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /lessons-container -->
+</div><!-- /main -->
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const lessons = ['home','intro','print','vars','ops','strings','conditions','loops','functions','tables','oop','roblox','gui','events','autofarm','esp','speed','brainrot','remote'];
+let visitedLessons = new Set(['home']);
+let currentLesson = 'home';
+let lang = 'id';
+
+const translations = {
+  id: {
+    'nav-section-1': '🚀 Mulai',
+    'nav-section-2': '📘 Dasar',
+    'nav-section-3': '🔁 Kontrol',
+    'nav-section-4': '🛠️ Lanjutan',
+    'nav-section-5': '🎮 Roblox & GUI',
+    'nav-section-6': '🤖 Script Populer',
+    'nav-home': 'Beranda',
+    'nav-intro': 'Pengenalan Lua',
+    'nav-print': 'Print & Output',
+    'nav-vars': 'Variabel & Tipe Data',
+    'nav-ops': 'Operator',
+    'nav-strings': 'String',
+    'nav-conditions': 'If / Else',
+    'nav-loops': 'Loop / Perulangan',
+    'nav-functions': 'Fungsi / Functions',
+    'nav-tables': 'Tables (Array & Dict)',
+    'nav-oop': 'OOP & Class',
+    'nav-roblox': 'Intro Roblox Lua',
+    'nav-gui': 'Frame & GUI',
+    'nav-events': 'Events & Klik',
+    'nav-autofarm': 'Auto Farm',
+    'nav-esp': 'ESP / Wallhack',
+    'nav-speed': 'Speed & Jump Hack',
+    'nav-brainrot': 'Auto Find Brainrots',
+    'nav-remote': 'Remote Events',
+    'hero-title1': 'Belajar Lua',
+    'hero-title2': 'dari Nol sampai Jago',
+    'hero-desc': 'Website belajar Lua lengkap — dari syntax dasar, tipe data, fungsi, table, sampai bikin GUI di Roblox dan script-script keren. Cocok untuk pemula!',
+    'stat1': 'Topik', 'stat2': 'Contoh Kode', 'stat3': 'Gratis',
+    'hero-btn': 'Mulai Belajar',
+    'tc1-title': 'Syntax Dasar', 'tc1-desc': 'Print, komentar, variabel, dan semua dasar Lua yang wajib kamu tau',
+    'tc2-title': 'Logika & Loop', 'tc2-desc': 'If/else, for, while — cara bikin program yang bisa berpikir dan mengulang',
+    'tc3-title': 'Roblox & GUI', 'tc3-desc': 'Cara bikin script di Roblox, frame, button, dan semua hal tentang GUI',
+    'tc4-title': 'Script Populer', 'tc4-desc': 'Auto farm, ESP, speed hack, auto find brainrots dan script keren lainnya',
+    'intro-title': 'Apa itu Lua?',
+    'intro-desc': 'Lua adalah bahasa pemrograman yang ringan, cepat, dan mudah dipelajari. Dibuat di Brazil tahun 1993, Lua sering dipakai di game (terutama Roblox), aplikasi, dan script otomatis.',
+    'intro-c1-title': 'Kenapa Belajar Lua?',
+    'intro-c1-desc': 'Lua dipakai di Roblox Studio, game engine seperti Love2D, dan banyak aplikasi besar. Syntaxnya simpel dan mudah dimengerti bahkan untuk pemula.',
+    'intro-tip1': 'Lua adalah bahasa #1 yang dipakai di Roblox. Kalau kamu mau bikin game Roblox, kamu HARUS belajar Lua!',
+    'intro-c2-title': 'Fakta Singkat Lua',
+    'th-prop': 'Properti', 'th-val': 'Nilai',
+    'intro-t1k': 'Dibuat', 'intro-t1v': '1993, di PUC-Rio Brazil',
+    'intro-t2k': 'Versi Terbaru',
+    'intro-t3k': 'Dipakai Di',
+    'intro-t4k': 'Tipe', 'intro-t4v': 'Interpreted, Dynamically Typed',
+    'intro-t5k': 'Kelebihan', 'intro-t5v': 'Ringan, cepat, mudah embed ke C',
+    'intro-c3-title': 'Komentar di Lua',
+    'intro-c3-desc': 'Komentar adalah teks yang diabaikan oleh Lua. Dipakai untuk menjelaskan kode.',
+    'nav-back-home': 'Beranda', 'nav-next-print': 'Print & Output',
+    'print-title': 'Print & Output',
+    'print-desc': 'Fungsi pertama yang harus kamu pelajari adalah print() — untuk menampilkan teks ke layar/konsol.',
+    'print-c1': 'Fungsi print()',
+    'print-c1-desc': 'print() adalah fungsi bawaan Lua untuk menampilkan output. Bisa menampilkan teks, angka, dan variabel.',
+    'print-c2': 'Menggabung Teks (Concatenation)',
+    'print-c2-desc': 'Di Lua, pakai .. untuk menggabungkan string.',
+    'print-c3': 'io.write() vs print()',
+    'print-c3-desc': 'io.write() mencetak tanpa newline di akhir, berguna untuk output satu baris.',
+    'nav-back-intro': 'Pengenalan', 'nav-next-vars': 'Variabel',
+    'vars-title': 'Variabel & Tipe Data',
+    'vars-desc': 'Variabel adalah tempat menyimpan data. Di Lua ada beberapa tipe data dasar yang wajib kamu kenal.',
+    'vars-c1': 'Membuat Variabel',
+    'vars-c1-desc': 'Pakai kata kunci local untuk variabel lokal (disarankan). Tanpa local = variabel global.',
+    'vars-c2': 'Tipe Data di Lua',
+    'th-type': 'Tipe', 'th-contoh': 'Contoh', 'th-keterangan': 'Keterangan',
+    'td-string': 'Teks / kata-kata', 'td-number': 'Angka (integer & float)',
+    'td-boolean': 'Benar / salah', 'td-nil': 'Tidak ada nilai / kosong',
+    'td-table': 'Array / objek / kamus', 'td-function': 'Fungsi yang tersimpan',
+    'vars-c3': 'Cek Tipe Data dengan type()',
+    'ops-title': 'Operator',
+    'ops-desc': 'Operator dipakai untuk melakukan operasi matematika, perbandingan, dan logika di Lua.',
+    'ops-c1': 'Operator Matematika', 'ops-c2': 'Operator Perbandingan', 'ops-c3': 'Operator Logika',
+    'strings-title': 'String (Teks)',
+    'strings-desc': 'String adalah tipe data untuk menyimpan teks. Lua punya banyak fungsi bawaan untuk memanipulasi string.',
+    'strings-c1': 'Fungsi-Fungsi String',
+    'cond-title': 'If / Else',
+    'cond-desc': 'Percabangan memungkinkan program mengambil keputusan berdasarkan kondisi tertentu.',
+    'cond-c1': 'Struktur If / Elseif / Else',
+    'cond-c2': 'Shortcut: and / or sebagai Ternary',
+    'loops-title': 'Loop / Perulangan',
+    'loops-desc': 'Loop membuat kode dijalankan berulang-ulang. Lua punya 3 jenis loop utama: for, while, dan repeat.',
+    'loops-c1': 'For Loop (Numerik)', 'loops-c2': 'While & Repeat',
+    'func-title': 'Fungsi / Functions',
+    'func-desc': 'Fungsi adalah blok kode yang bisa dipanggil berulang kali. Sangat penting untuk membuat kode yang terorganisir dan efisien.',
+    'func-c1': 'Membuat dan Memanggil Fungsi',
+    'func-c2': 'Variadic Function (...)',
+    'func-c2-desc': 'Fungsi yang bisa menerima jumlah argumen tak terbatas.',
+    'tbl-title': 'Tables',
+    'tbl-desc': 'Table adalah struktur data paling penting di Lua. Bisa berfungsi sebagai array, dictionary (kamus), set, dan bahkan OOP class!',
+    'tbl-c1': 'Table sebagai Array', 'tbl-c2': 'Table sebagai Dictionary',
+    'oop-title': 'OOP & Class di Lua',
+    'oop-desc': 'Lua tidak punya class bawaan, tapi kita bisa membuat OOP (Object-Oriented Programming) menggunakan table dan metatables.',
+    'oop-c1': 'Membuat Class dengan Table',
+    'rblx-title': 'Intro Roblox Lua',
+    'rblx-desc': 'Roblox menggunakan versi Lua yang disebut Luau. Ada beberapa konsep penting di Roblox yang harus kamu pahami.',
+    'rblx-c1': 'Services Penting Roblox',
+    'rblx-c2': 'Wait, Delay, dan Spawn',
+    'rblx-tip': 'Selalu pakai task.wait() bukan wait() di Roblox modern — lebih efisien dan akurat!',
+    'gui-title': 'Frame & GUI di Roblox',
+    'gui-desc': 'GUI (Graphical User Interface) di Roblox dibuat pakai ScreenGui, Frame, TextLabel, TextButton, dan elemen lainnya via kode Lua.',
+    'gui-c1': 'Membuat ScreenGui & Frame dari Script',
+    'gui-c2': 'Memahami UDim2',
+    'gui-c2-desc': 'UDim2 adalah cara Roblox mengatur ukuran dan posisi.',
+    'th-udim': 'UDim2', 'th-arti': 'Artinya',
+    'udim1': 'Penuh layar (100% x 100%)', 'udim2': 'Tengah layar (50% x 50%)',
+    'udim3': '200px lebar, 50px tinggi (pixel murni)', 'udim4': '50% layar dikurangi 100px (untuk centering)',
+    'ev-title': 'Events & Input',
+    'ev-desc': 'Events di Roblox memungkinkan kode bereaksi terhadap aksi seperti klik, keyboard, dan kejadian game.',
+    'ev-c1': 'Common Events',
+    'af-title': 'Auto Farm',
+    'af-desc': 'Auto Farm adalah script yang membuat karakter otomatis mengumpulkan item atau mengalahkan musuh secara berulang tanpa input manual.',
+    'af-warn': 'Script ini hanya untuk pembelajaran. Penggunaan exploit di game orang lain bisa menyebabkan ban. Gunakan di private server atau game buatan sendiri!',
+    'af-c1': 'Template Auto Farm (Teleport ke NPC)',
+    'esp-title': 'ESP / Highlight',
+    'esp-desc': 'ESP (Extra Sensory Perception) membuat player atau objek terlihat melalui dinding menggunakan Highlight atau BillboardGui.',
+    'esp-c1': 'ESP menggunakan Highlight',
+    'sp-title': 'Speed & Jump Hack',
+    'sp-desc': 'Script untuk mengubah kecepatan lari dan tinggi lompatan karakter di Roblox.',
+    'sp-c1': 'Speed & Jump Script dengan Toggle GUI',
+    'br-title': 'Auto Find Brainrots',
+    'br-desc': 'Script untuk otomatis menemukan dan berinteraksi dengan Brainrot entities di game Roblox. Konsep: scan workspace, filter berdasarkan nama, teleport dan interaksi.',
+    'br-tip': 'Script ini menunjukkan cara scan workspace, filter model berdasarkan nama, dan auto-interact — konsep yang bisa dipakai di banyak game Roblox!',
+    'br-c1': 'Auto Find & Interact Script',
+    're-title': 'Remote Events',
+    're-desc': 'RemoteEvent dipakai untuk komunikasi antara Client (LocalScript) dan Server (Script). Sangat penting untuk membuat fitur multiplayer.',
+    're-c1': 'Cara Kerja RemoteEvent',
+    're-tip': 'Selalu validasi data di server! Jangan percaya data yang dikirim client begitu saja — karena bisa dimanipulasi oleh exploiter.',
+    're-home': 'Kembali ke Beranda',
+  },
+  en: {
+    'nav-section-1': '🚀 Start',
+    'nav-section-2': '📘 Basics',
+    'nav-section-3': '🔁 Control',
+    'nav-section-4': '🛠️ Advanced',
+    'nav-section-5': '🎮 Roblox & GUI',
+    'nav-section-6': '🤖 Popular Scripts',
+    'nav-home': 'Home',
+    'nav-intro': 'Introduction to Lua',
+    'nav-print': 'Print & Output',
+    'nav-vars': 'Variables & Data Types',
+    'nav-ops': 'Operators',
+    'nav-strings': 'Strings',
+    'nav-conditions': 'If / Else',
+    'nav-loops': 'Loops',
+    'nav-functions': 'Functions',
+    'nav-tables': 'Tables (Array & Dict)',
+    'nav-oop': 'OOP & Class',
+    'nav-roblox': 'Intro to Roblox Lua',
+    'nav-gui': 'Frame & GUI',
+    'nav-events': 'Events & Click',
+    'nav-autofarm': 'Auto Farm',
+    'nav-esp': 'ESP / Wallhack',
+    'nav-speed': 'Speed & Jump Hack',
+    'nav-brainrot': 'Auto Find Brainrots',
+    'nav-remote': 'Remote Events',
+    'hero-title1': 'Learn Lua',
+    'hero-title2': 'from Zero to Hero',
+    'hero-desc': 'A complete Lua learning website — from basic syntax, data types, functions, tables, to building GUIs in Roblox and awesome scripts. Perfect for beginners!',
+    'stat1': 'Topics', 'stat2': 'Code Examples', 'stat3': 'Free',
+    'hero-btn': 'Start Learning',
+    'tc1-title': 'Basic Syntax', 'tc1-desc': 'Print, comments, variables, and all the Lua basics you need to know',
+    'tc2-title': 'Logic & Loops', 'tc2-desc': 'If/else, for, while — how to make programs that think and repeat',
+    'tc3-title': 'Roblox & GUI', 'tc3-desc': 'How to script in Roblox, frames, buttons, and everything about GUI',
+    'tc4-title': 'Popular Scripts', 'tc4-desc': 'Auto farm, ESP, speed hack, auto find brainrots and more cool scripts',
+    'intro-title': 'What is Lua?',
+    'intro-desc': 'Lua is a lightweight, fast, and easy-to-learn programming language. Created in Brazil in 1993, Lua is widely used in games (especially Roblox), applications, and automation scripts.',
+    'intro-c1-title': 'Why Learn Lua?',
+    'intro-c1-desc': 'Lua is used in Roblox Studio, game engines like Love2D, and many large applications. Its syntax is simple and easy to understand even for beginners.',
+    'intro-tip1': 'Lua is the #1 language used in Roblox. If you want to make Roblox games, you MUST learn Lua!',
+    'intro-c2-title': 'Lua Quick Facts',
+    'th-prop': 'Property', 'th-val': 'Value',
+    'intro-t1k': 'Created', 'intro-t1v': '1993, at PUC-Rio Brazil',
+    'intro-t2k': 'Latest Version',
+    'intro-t3k': 'Used In',
+    'intro-t4k': 'Type', 'intro-t4v': 'Interpreted, Dynamically Typed',
+    'intro-t5k': 'Strengths', 'intro-t5v': 'Lightweight, fast, easy to embed in C',
+    'intro-c3-title': 'Comments in Lua',
+    'intro-c3-desc': 'Comments are text ignored by Lua. Used to explain code.',
+    'nav-back-home': 'Home', 'nav-next-print': 'Print & Output',
+    'print-title': 'Print & Output',
+    'print-desc': 'The first function you must learn is print() — to display text to the screen/console.',
+    'print-c1': 'The print() Function',
+    'print-c1-desc': 'print() is a built-in Lua function for displaying output. It can display text, numbers, and variables.',
+    'print-c2': 'Concatenating Text',
+    'print-c2-desc': 'In Lua, use .. to concatenate strings.',
+    'print-c3': 'io.write() vs print()',
+    'print-c3-desc': 'io.write() prints without a newline at the end, useful for single-line output.',
+    'nav-back-intro': 'Introduction', 'nav-next-vars': 'Variables',
+    'vars-title': 'Variables & Data Types',
+    'vars-desc': 'Variables store data. In Lua there are several basic data types you need to know.',
+    'vars-c1': 'Creating Variables',
+    'vars-c1-desc': 'Use the local keyword for local variables (recommended). Without local = global variable.',
+    'vars-c2': 'Data Types in Lua',
+    'th-type': 'Type', 'th-contoh': 'Example', 'th-keterangan': 'Description',
+    'td-string': 'Text / words', 'td-number': 'Numbers (integer & float)',
+    'td-boolean': 'True / false', 'td-nil': 'No value / empty',
+    'td-table': 'Array / object / dictionary', 'td-function': 'Stored function',
+    'vars-c3': 'Check Data Type with type()',
+    'ops-title': 'Operators',
+    'ops-desc': 'Operators are used to perform math, comparison, and logic operations in Lua.',
+    'ops-c1': 'Math Operators', 'ops-c2': 'Comparison Operators', 'ops-c3': 'Logical Operators',
+    'strings-title': 'Strings (Text)',
+    'strings-desc': 'String is the data type for storing text. Lua has many built-in functions for manipulating strings.',
+    'strings-c1': 'String Functions',
+    'cond-title': 'If / Else',
+    'cond-desc': 'Conditionals allow a program to make decisions based on specific conditions.',
+    'cond-c1': 'If / Elseif / Else Structure',
+    'cond-c2': 'Shortcut: and / or as Ternary',
+    'loops-title': 'Loops',
+    'loops-desc': 'Loops make code run repeatedly. Lua has 3 main loop types: for, while, and repeat.',
+    'loops-c1': 'For Loop (Numeric)', 'loops-c2': 'While & Repeat',
+    'func-title': 'Functions',
+    'func-desc': 'A function is a block of code that can be called repeatedly. Very important for writing organized and efficient code.',
+    'func-c1': 'Creating and Calling Functions',
+    'func-c2': 'Variadic Function (...)',
+    'func-c2-desc': 'A function that can accept an unlimited number of arguments.',
+    'tbl-title': 'Tables',
+    'tbl-desc': 'Tables are the most important data structure in Lua. They can act as arrays, dictionaries, sets, and even OOP classes!',
+    'tbl-c1': 'Table as Array', 'tbl-c2': 'Table as Dictionary',
+    'oop-title': 'OOP & Classes in Lua',
+    'oop-desc': 'Lua doesn\'t have built-in classes, but we can create OOP (Object-Oriented Programming) using tables and metatables.',
+    'oop-c1': 'Creating a Class with Tables',
+    'rblx-title': 'Intro to Roblox Lua',
+    'rblx-desc': 'Roblox uses a version of Lua called Luau. There are several important concepts in Roblox you need to understand.',
+    'rblx-c1': 'Important Roblox Services',
+    'rblx-c2': 'Wait, Delay, and Spawn',
+    'rblx-tip': 'Always use task.wait() instead of wait() in modern Roblox — it\'s more efficient and accurate!',
+    'gui-title': 'Frame & GUI in Roblox',
+    'gui-desc': 'GUI (Graphical User Interface) in Roblox is created with ScreenGui, Frame, TextLabel, TextButton, and other elements via Lua code.',
+    'gui-c1': 'Creating ScreenGui & Frame from Script',
+    'gui-c2': 'Understanding UDim2',
+    'gui-c2-desc': 'UDim2 is how Roblox sets size and position.',
+    'th-udim': 'UDim2', 'th-arti': 'Meaning',
+    'udim1': 'Full screen (100% x 100%)', 'udim2': 'Center of screen (50% x 50%)',
+    'udim3': '200px wide, 50px tall (pure pixels)', 'udim4': '50% screen minus 100px (for centering)',
+    'ev-title': 'Events & Input',
+    'ev-desc': 'Events in Roblox allow code to react to actions like clicks, keyboard input, and game events.',
+    'ev-c1': 'Common Events',
+    'af-title': 'Auto Farm',
+    'af-desc': 'Auto Farm is a script that makes the character automatically collect items or defeat enemies repeatedly without manual input.',
+    'af-warn': 'This script is for educational purposes only. Using exploits in other people\'s games can result in a ban. Use in private servers or your own games!',
+    'af-c1': 'Auto Farm Template (Teleport to NPC)',
+    'esp-title': 'ESP / Highlight',
+    'esp-desc': 'ESP (Extra Sensory Perception) makes players or objects visible through walls using Highlight or BillboardGui.',
+    'esp-c1': 'ESP using Highlight',
+    'sp-title': 'Speed & Jump Hack',
+    'sp-desc': 'Scripts for changing walk speed and jump height in Roblox.',
+    'sp-c1': 'Speed & Jump Script with Toggle GUI',
+    'br-title': 'Auto Find Brainrots',
+    'br-desc': 'Script to automatically find and interact with Brainrot entities in Roblox games. Concept: scan workspace, filter by name, teleport and interact.',
+    'br-tip': 'This script demonstrates how to scan the workspace, filter models by name, and auto-interact — a concept usable in many Roblox games!',
+    'br-c1': 'Auto Find & Interact Script',
+    're-title': 'Remote Events',
+    're-desc': 'RemoteEvent is used for communication between Client (LocalScript) and Server (Script). Very important for multiplayer features.',
+    're-c1': 'How RemoteEvent Works',
+    're-tip': 'Always validate data on the server! Don\'t blindly trust data sent by the client — it can be manipulated by exploiters.',
+    're-home': 'Back to Home',
+  }
+};
+
+// ============================================================
+// FUNCTIONS
+// ============================================================
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-id').classList.toggle('active', l === 'id');
+  document.getElementById('btn-en').classList.toggle('active', l === 'en');
+  const t = translations[l];
+  for (const [id, text] of Object.entries(t)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+}
+
+function showLesson(id) {
+  // Hide all lessons
+  document.querySelectorAll('.lesson').forEach(l => l.classList.remove('active'));
+  // Show target
+  const target = document.getElementById('lesson-' + id);
+  if (target) target.classList.add('active');
+
+  // Update nav items
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    const onclick = item.getAttribute('onclick');
+    if (onclick && onclick.includes("'" + id + "'")) {
+      item.classList.add('active');
+    }
+  });
+
+  currentLesson = id;
+  visitedLessons.add(id);
+  updateProgress();
+  updateTopbar(id);
+
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+
+  // Scroll to top
+  window.scrollTo(0, 0);
+}
+
+function updateProgress() {
+  const contentLessons = lessons.filter(l => l !== 'home');
+  const visited = contentLessons.filter(l => visitedLessons.has(l));
+  const pct = Math.round((visited.length / contentLessons.length) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = visited.length + '/' + contentLessons.length;
+}
+
+const topbarInfo = {
+  home: ['Beranda / Home', 'Home'],
+  intro: ['Dasar / Basics', 'Pengenalan Lua / Introduction'],
+  print: ['Dasar / Basics', 'Print & Output'],
+  vars: ['Dasar / Basics', 'Variabel / Variables'],
+  ops: ['Dasar / Basics', 'Operator'],
+  strings: ['Dasar / Basics', 'String'],
+  conditions: ['Kontrol / Control', 'If / Else'],
+  loops: ['Kontrol / Control', 'Loop / Perulangan'],
+  functions: ['Lanjutan / Advanced', 'Fungsi / Functions'],
+  tables: ['Lanjutan / Advanced', 'Tables'],
+  oop: ['Lanjutan / Advanced', 'OOP & Class'],
+  roblox: ['Roblox', 'Intro Roblox Lua'],
+  gui: ['Roblox', 'Frame & GUI'],
+  events: ['Roblox', 'Events'],
+  autofarm: ['Script Populer', 'Auto Farm'],
+  esp: ['Script Populer', 'ESP / Highlight'],
+  speed: ['Script Populer', 'Speed & Jump'],
+  brainrot: ['Script Populer', 'Auto Find Brainrots'],
+  remote: ['Roblox Advanced', 'Remote Events'],
+};
+
+function updateTopbar(id) {
+  const info = topbarInfo[id] || ['LuaLearn', id];
+  document.getElementById('topbar-section').textContent = info[0];
+  document.getElementById('topbar-page').textContent = info[1];
+}
+
+function copyCode(btn) {
+  const codeBody = btn.closest('.code-block').querySelector('.code-body');
+  const text = codeBody.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// Mobile menu
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+});
+
+document.getElementById('overlay').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+});
+
+// Init
+updateProgress();
+</script>
+</body>
+</html>
