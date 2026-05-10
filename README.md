@@ -1,2 +1,2 @@
 # Learns-Lua
---- permalink: /Kitsune Lua.html ---
+--- permalink: /KitsuneLua.html ---
